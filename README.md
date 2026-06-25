@@ -5,6 +5,9 @@ Personal portfolio for **Daniel Odiachi** — senior backend-heavy fullstack eng
 Built with [Astro](https://astro.build) (static output) + Tailwind CSS + MDX.
 Hosted on Cloudflare. **Every push to `main` auto-deploys.**
 
+> 📖 **Maintaining the site?** See **[docs/updating-the-site.md](docs/updating-the-site.md)**
+> — the full guide to adding case studies, Web/WordPress sites, images, and editing copy.
+
 ---
 
 ## 🧞 Commands
