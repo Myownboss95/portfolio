@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portfolio",
+  "compatibility_date": "2025-01-01",
+  // Static Astro build output. No server script — Cloudflare serves dist/ as
+  // static assets. `npm run build` produces this folder; `wrangler deploy` uploads it.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}
