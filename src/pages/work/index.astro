@@ -2,13 +2,15 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
+import SiteCard from '../../components/SiteCard.astro';
+import { SITES } from '../../data/sites';
 
 const projects = (await getCollection('projects')).sort(
   (a, b) => a.data.order - b.data.order
 );
 ---
 
-<BaseLayout title="Work" description="Case studies from production fintech systems — payments, card issuance, KYC, and security.">
+<BaseLayout title="Work" description="Case studies from production fintech systems — payments, card issuance, KYC, and security — plus web & WordPress builds.">
   <section class="mx-auto max-w-5xl px-5 py-16">
     <h1 class="text-3xl font-bold tracking-tight text-main sm:text-4xl">Work</h1>
     <p class="mt-3 max-w-2xl text-lg text-muted">
@@ -17,13 +19,30 @@ const projects = (await getCollection('projects')).sort(
       Most source is private (production fintech) — the engineering is in the write-up.
     </p>
 
+    <!-- Case studies -->
+    <h2 class="mt-12 font-mono text-sm font-semibold uppercase tracking-wider text-accent">Case studies</h2>
     {
       projects.length > 0 ? (
-        <div class="mt-10 grid gap-5 sm:grid-cols-2">
+        <div class="mt-5 grid gap-5 sm:grid-cols-2">
           {projects.map((project) => <ProjectCard project={project} />)}
         </div>
       ) : (
-        <p class="mt-10 text-muted">Case studies coming soon.</p>
+        <p class="mt-5 text-muted">Case studies coming soon.</p>
+      )
+    }
+
+    <!-- Web & WordPress -->
+    {
+      SITES.length > 0 && (
+        <>
+          <h2 class="mt-16 font-mono text-sm font-semibold uppercase tracking-wider text-accent">Web &amp; WordPress</h2>
+          <p class="mt-2 max-w-2xl text-muted">
+            Client websites and WordPress builds — design, development, and deployment.
+          </p>
+          <div class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {SITES.map((site) => <SiteCard site={site} />)}
+          </div>
+        </>
       )
     }
   </section>
