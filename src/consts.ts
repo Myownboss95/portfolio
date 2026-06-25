@@ -5,10 +5,10 @@ export const SITE = {
   title: 'Daniel Odiachi — Senior Backend-Heavy Fullstack Engineer',
   tagline: 'Senior Fullstack Engineer & Technical Lead · Fintech & Payments',
   description:
-    'Senior backend-heavy fullstack engineer with 8+ years shipping production fintech: cross-border payments, virtual card issuance, KYC/AML, and end-to-end encryption. Available for remote roles.',
+    'Senior backend-heavy fullstack engineer with 8+ years shipping production fintech: cross-border payments, virtual card issuance, KYC/AML, and end-to-end encryption. Available for remote or on-site roles worldwide.',
   url: 'https://danielodiachi.work',
   email: 'tobeodiachi@yahoo.com',
-  location: 'Remote · Nigeria (UTC+1)',
+  location: 'Available worldwide',
   phone: '+234 813 188 6973',
   phoneHref: 'tel:+2348131886973',
   resumeUrl: '/Daniel-Odiachi-Resume.pdf',
