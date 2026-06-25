@@ -1,0 +1,57 @@
+---
+title: "Tiered KYC System (Prova)"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2023 — Present"
+summary: "Hizo's provider-agnostic KYC platform — tiered identity verification (Smile ID and others) with progressive feature gating that unlocks products as users complete higher verification levels."
+stack: ["Laravel", "PHP", "PostgreSQL", "Smile ID", "TypeScript"]
+domain: ["KYC", "Security", "Architecture"]
+featured: true
+order: 2
+sourcePrivate: true
+---
+
+## The problem
+
+A neobank can't let anyone do anything. Regulations and risk demand that **what a user can do scales with how well they're verified** — a lightly-verified user might hold a wallet, while cards, remittance, and crypto require progressively stronger identity proof. Hizo needed a KYC system that enforced this consistently across every product, without hard-wiring a single vendor.
+
+## Constraints
+
+- **Provider-agnostic** — Smile ID today, others tomorrow; the platform couldn't be coupled to one vendor's quirks.
+- **Tiered, not binary** — verification is levels (tier 0 → tier N), each unlocking specific features.
+- **Enforced everywhere** — card issuance, remittance, and crypto all had to respect the same gate, with no bypass.
+- **Async + unreliable providers** — identity checks are slow and sometimes fail; the system had to handle pending/failed states gracefully.
+
+## What I built
+
+I built **Prova**, Hizo's KYC platform.
+
+```text
+   User submits documents
+            │
+            ▼
+   ┌──────────────────┐     adapter      ┌──────────────┐
+   │  Prova (Laravel) │ ───────────────▶ │  Smile ID    │
+   │  tier state +    │ ◀─────────────── │  (+ others)   │
+   │  feature gating  │   verification   └──────────────┘
+   └────────┬─────────┘     result
+            │  tier level
+   ┌────────┼──────────────┐
+   ▼        ▼              ▼
+ Cards   Remittance     Crypto      ← each checks required tier
+```
+
+- A **provider adapter layer** so new KYC vendors plug in without touching product code.
+- A **tier state machine** per user, advancing as documents are validated.
+- **Progressive feature gating** — every product asks "does this user meet the required tier?" against one authority, so access rules are centralized and consistent.
+
+## The decision that mattered
+
+Model KYC as a **tier level owned by one platform**, and have every product gate against that level rather than re-checking documents themselves. This decoupled "how we verify" (swappable providers) from "what verification unlocks" (product rules) — so adding a provider or a new gated feature was a config change, not a rewrite.
+
+## Impact
+
+- One provider-agnostic KYC platform gating **cards, remittance, and crypto** across multiple African markets.
+- Progressive onboarding: users unlock products as they verify, balancing growth with compliance.
+
+_Source code is private (production fintech). Architecture and decisions summarized here — happy to walk through detail in an interview._

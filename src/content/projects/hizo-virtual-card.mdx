@@ -1,0 +1,59 @@
+---
+title: "Hizo Global Virtual Card"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2023 — Present"
+summary: "Architected and shipped USD virtual card issuance for a pan-African neobank — schema, REST API, security, and Interlace SDK integration — live across multiple African markets on iOS and Android."
+stack: ["Laravel", "PHP", "PostgreSQL", "Redis", "Interlace SDK", "Flutter"]
+domain: ["Payments", "Security", "Fintech"]
+featured: true
+order: 3
+sourcePrivate: true
+links:
+  appStore: "https://apps.apple.com/"
+  playStore: "https://play.google.com/store"
+---
+
+## The problem
+
+Hizo needed to let users across multiple African markets spend in USD online — subscriptions, SaaS, international merchants — without a traditional bank card. That meant **issuing and operating virtual USD cards** end to end: provisioning, funding, spend authorization, lifecycle (freeze/terminate), and secure card-detail reveal, all under fintech-grade security and compliance.
+
+## Constraints
+
+- **Third-party card issuer (Interlace)** with its own SDK, webhooks, and failure modes — our system had to stay correct even when theirs was slow or inconsistent.
+- **Money movement** — every state transition had to be auditable and idempotent; no double-issues, no lost funding events.
+- **Multi-market** rollout with KYC gating before a user could ever hold a card.
+- **Mobile-first** — the client was Flutter on iOS and Android, so the API had to be clean and the sensitive flows (card reveal) had to be secure on a device we don't fully control.
+
+## What I built
+
+I owned the system end to end — schema, REST API, security model, and the Interlace integration.
+
+```text
+Flutter app ──HTTPS──▶ Hizo API (Laravel)
+                          │
+        ┌─────────────────┼───────────────────────┐
+        ▼                 ▼                         ▼
+   Card service      Funding ledger          Interlace SDK
+   (issue/freeze/    (idempotent, audited)   (issuer webhooks)
+    terminate)             │                         │
+        └──────────▶ PostgreSQL ◀────── reconciliation ┘
+                          ▲
+                     Redis (rate limits, queues)
+```
+
+- A **card lifecycle service** modelling issue → active → frozen → terminated as explicit, audited state transitions.
+- An **idempotent funding ledger** so retried requests and duplicate webhooks never move money twice.
+- **Webhook reconciliation** against Interlace as the source of truth, so transient failures self-heal instead of drifting.
+- A secure **card-detail reveal** flow (see the [end-to-end encryption case study] for the crypto envelope).
+
+## The decision that mattered
+
+Treat **our ledger, not the issuer, as the system of record for intent**, and reconcile against the issuer asynchronously. This decoupled the user-facing flow from Interlace's latency and let us prove correctness from our own audit trail — essential when the question is "where did this money go?"
+
+## Impact
+
+- USD card issuance **live across multiple African markets**, on the iOS App Store and Google Play.
+- A reusable issuance + ledger foundation other Hizo products (remittance, crypto) built on top of.
+
+_Source code is private (production fintech). Architecture and decisions are summarized here; happy to walk through detail in an interview._

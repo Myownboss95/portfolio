@@ -1,0 +1,69 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export const getStaticPaths = (async () => {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+
+const links = [
+  d.links.live && { label: 'Live site', href: d.links.live },
+  d.links.appStore && { label: 'App Store', href: d.links.appStore },
+  d.links.playStore && { label: 'Google Play', href: d.links.playStore },
+  d.links.repo && { label: 'Source', href: d.links.repo },
+].filter(Boolean) as { label: string; href: string }[];
+---
+
+<BaseLayout title={d.title} description={d.summary}>
+  <article class="mx-auto max-w-3xl px-5 py-16">
+    <a href="/work" class="font-mono text-sm text-muted transition hover:text-accent">← All work</a>
+
+    <header class="mt-6 border-b border-app pb-8">
+      <div class="mb-3 flex flex-wrap gap-2">
+        {d.domain.map((tag) => (
+          <span class="rounded-full bg-soft px-2.5 py-0.5 font-mono text-xs text-accent">{tag}</span>
+        ))}
+      </div>
+      <h1 class="text-3xl font-bold tracking-tight text-main sm:text-4xl">{d.title}</h1>
+      <p class="mt-2 text-muted">{d.role} · {d.company} · {d.period}</p>
+      <p class="mt-4 text-lg leading-relaxed text-muted">{d.summary}</p>
+
+      <div class="mt-5 flex flex-wrap items-center gap-4">
+        {links.map((l) => (
+          <a href={l.href} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+            {l.label}
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10" /></svg>
+          </a>
+        ))}
+      </div>
+
+      {d.stack.length > 0 && (
+        <div class="mt-5 flex flex-wrap gap-1.5">
+          {d.stack.map((s) => (
+            <span class="rounded border border-app px-2 py-0.5 font-mono text-xs text-faint">{s}</span>
+          ))}
+        </div>
+      )}
+
+      {d.sourcePrivate && (
+        <p class="mt-6 rounded-lg border border-app bg-soft px-4 py-3 text-sm text-muted">
+          🔒 Source is private (production fintech). The architecture and decisions are
+          documented below — happy to walk through detail in an interview.
+        </p>
+      )}
+    </header>
+
+    <div class="prose-case mt-8">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

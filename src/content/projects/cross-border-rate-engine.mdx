@@ -1,0 +1,56 @@
+---
+title: "Cross-Border RateEngine"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2023 — Present"
+summary: "The core pricing layer of Hizo's neobank — a cross-border rate engine driving FX conversion, internal rate sourcing, and liquidity routing across remittance and crypto flows."
+stack: ["Laravel", "PHP", "PostgreSQL", "Redis", "TypeScript"]
+domain: ["Payments", "Fintech", "Architecture"]
+featured: true
+order: 1
+sourcePrivate: true
+---
+
+## The problem
+
+Every money-movement product at Hizo — USDT-to-fiat remittance, crypto trading, card funding — needed a **consistent, trustworthy price**. Without a single source of truth for rates, each flow would invent its own FX math, drift apart, and expose the business to mispricing and loss. The RateEngine was built to be that single source of truth.
+
+## Constraints
+
+- **Money-critical correctness** — a wrong rate or a rounding bug is real financial loss. Decimal math had to be exact (this is the class of bug I caught in staging via assertion-level logging before it reached production).
+- **Multiple inputs** — rates sourced from PSPs and market feeds, blended into an internal rate with spread/margin rules.
+- **Multiple consumers** — remittance, crypto, and card flows all priced off the same engine, each with different tiering.
+- **Freshness vs. stability** — quotes had to be current but not flap on every tick; stale rates are a liability.
+
+## What I built
+
+```text
+   Rate sources (PSPs, market feeds)
+              │
+              ▼
+        ┌───────────────┐
+        │  RateEngine   │  internal rate = source ± spread/margin
+        │  (Laravel)    │  cached + versioned quotes (Redis)
+        └───────┬───────┘
+                │  one priced quote, audited
+   ┌────────────┼─────────────┐
+   ▼            ▼             ▼
+ Remittance   Crypto       Card funding
+ (USDT→fiat)  trading
+```
+
+- A central rate-sourcing + blending layer producing an **internal rate** with configurable spread/margin.
+- **Quote caching and versioning** in Redis so consumers price off a stable, auditable snapshot rather than a live-moving number.
+- A single pricing contract consumed by remittance, crypto, and card funding — so a rate change propagates everywhere consistently.
+- **Liquidity routing** feeding payout decisions across local African rails.
+
+## The decision that mattered
+
+Make the RateEngine the **one place** money is ever priced, and have every product depend on it rather than computing FX themselves. Centralizing pricing meant correctness, spread policy, and auditability lived in a single, testable system — instead of being re-implemented (and re-bugged) in every flow.
+
+## Impact
+
+- Powered pricing across **remittance, crypto, and card funding** from a single source of truth.
+- Caught a silent float-conversion bug in cross-border decimal math during staging, preventing a class of money-movement errors from reaching production.
+
+_Source code is private (production fintech). Architecture and decisions summarized here — happy to walk through detail in an interview._

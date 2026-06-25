@@ -1,0 +1,55 @@
+---
+title: "End-to-End Encryption Layer"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2023 — Present"
+summary: "A modern end-to-end encryption layer (X25519 key exchange, HKDF-SHA256, AES-256-GCM) for secure virtual-card detail reveals, with a Flutter client SDK so sensitive data is never exposed in transit or at rest on the server."
+stack: ["X25519", "AES-256-GCM", "HKDF-SHA256", "Laravel", "Flutter / Dart"]
+domain: ["Security", "Payments", "Mobile"]
+featured: true
+order: 4
+sourcePrivate: true
+---
+
+## The problem
+
+Showing a user their full virtual-card details (PAN, CVV, expiry) is one of the most sensitive operations a neobank performs. Sending those over a normal TLS-terminated API still exposes them to the server, logs, and anything in between. We needed the card details to be readable **only** by the user's device — true end-to-end encryption, not just transport security.
+
+## Constraints
+
+- **Mobile client we don't fully control** — a Flutter app on iOS and Android.
+- **Modern, auditable crypto** — no home-rolled algorithms; standard primitives composed correctly.
+- **Server must never see plaintext** card details, even momentarily.
+- **Usable** — the encryption had to be invisible to the user and simple for client engineers to consume.
+
+## What I built
+
+An end-to-end encryption envelope plus a Flutter client SDK.
+
+```text
+Device                                  Server
+  │  generate X25519 keypair               │
+  │ ──────── public key ─────────────────▶ │
+  │                                        │  X25519 ECDH → shared secret
+  │                                        │  HKDF-SHA256 → symmetric key
+  │                                        │  AES-256-GCM encrypt card details
+  │ ◀────── ciphertext + nonce + tag ───── │
+  │  derive same key, AES-256-GCM decrypt  │
+  │  card details revealed on-device only  │
+```
+
+- **X25519 ECDH** key exchange to establish a shared secret between device and server.
+- **HKDF-SHA256** to derive a symmetric key from that secret.
+- **AES-256-GCM** for authenticated encryption (confidentiality + integrity via the auth tag).
+- A **Flutter client SDK** wrapping all of this so app engineers call one method and never touch raw crypto.
+
+## The decision that mattered
+
+Compose **standard, well-reviewed primitives** (X25519 + HKDF + AES-GCM) into a clean envelope rather than relying on transport security alone — and hide the whole thing behind an SDK. This kept the cryptography correct and auditable while making it trivial and safe for the rest of the team to use.
+
+## Impact
+
+- Card details decryptable **only on the user's device** — never visible to the server, logs, or the network.
+- A reusable encryption SDK the mobile team could adopt without crypto expertise.
+
+_Source code is private (production fintech). The technique here is general, not proprietary — a sanitized open-source demo of this envelope is a strong candidate for a public "show me code" repo._

@@ -1,0 +1,129 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, SOCIALS } from '../consts';
+
+const experience = [
+  {
+    role: 'Software Engineer (Backend)',
+    company: 'Dantown',
+    period: 'May 2026 — Present',
+    location: 'Remote',
+    points: [
+      'Building backend systems with Laravel and TypeScript for Dantown’s HR and MoneyBridge platforms.',
+      'Delivering API design, data modelling, and platform integration across both products.',
+    ],
+  },
+  {
+    role: 'Technical Lead / CTO',
+    company: 'Hizo Africa — Pan-African Neobank',
+    period: 'Oct 2023 — Present',
+    location: 'Remote',
+    points: [
+      'Led platform architecture for a neobank serving cross-border payments, KYC-gated services, and virtual USD cards across multiple African markets. Live on iOS & Android.',
+      'Architected the cross-border RateEngine — the core pricing layer driving FX conversion, internal rate sourcing, and liquidity routing across remittance and crypto flows.',
+      'Designed the tiered KYC system (Prova) — provider-agnostic identity verification (Smile ID and others) with progressive feature gating across user journeys.',
+      'Architected a bidirectional USDT-to-fiat remittance platform with payout via local rails (SasaPay, PawaPay, M-Pesa), priced by the RateEngine.',
+      'Owned the Hizo Global Virtual Card system end to end — architecture, schema, REST API, security, and Interlace SDK integration.',
+      'Designed an end-to-end encryption layer (X25519, HKDF-SHA256, AES-256-GCM) for secure card-detail reveals, with a Flutter client SDK.',
+      'Managed a team of 6 engineers and seven third-party vendor relationships across product, design, and compliance.',
+    ],
+  },
+  {
+    role: 'Senior Engineering Consultant',
+    company: 'Coriftech · TIVA Tech Africa · TECH4DEV',
+    period: '2021 — Present',
+    location: 'Remote (project basis)',
+    points: [
+      'Delivered full stack engineering training to 1,000+ youths across multiple cohorts.',
+      'Built client-facing software and in-house SaaS; ongoing backend/platform architecture support for Trazo (food vending) and advising Vent Africa.',
+    ],
+  },
+  {
+    role: 'Lead Web Developer (WordPress & Three.js)',
+    company: 'Spiral Marketing — Fairfax, Virginia, USA',
+    period: '2022 — 2023',
+    location: 'Remote',
+    points: [
+      'Led the team delivering client web projects across SaaS, marketing, and interactive web.',
+      'Built immersive Three.js / WebGL marketing sites and 3D product showcases; mentored junior developers.',
+    ],
+  },
+  {
+    role: 'Backend Developer & Team Lead',
+    company: 'Abegyi Corporation — Jos, Nigeria',
+    period: '2018 — 2020',
+    location: 'On-site',
+    points: [
+      'Led a backend team on a fintech product that secured $500,000+ in seed funding.',
+      'Owned backend architecture, payments integration, and release coordination.',
+    ],
+  },
+];
+---
+
+<BaseLayout title="About" description="Senior backend-heavy fullstack engineer & technical lead with 8+ years in fintech and payments.">
+  <section class="mx-auto max-w-3xl px-5 py-16">
+    <h1 class="text-3xl font-bold tracking-tight text-main sm:text-4xl">About</h1>
+
+    <div class="prose-case mt-6">
+      <p>
+        I’m a senior, <strong>backend-heavy fullstack engineer and technical lead</strong> with
+        8+ years shipping production fintech platforms across web and mobile. I’m currently building
+        backend systems at <strong>Dantown</strong> (Laravel + TypeScript) for their HR and MoneyBridge
+        platforms. Before that, as CTO at <strong>Hizo Africa</strong>, I led a team of 6 and owned the
+        core architecture — the cross-border RateEngine, the tiered KYC system, virtual card issuance,
+        and end-to-end encryption.
+      </p>
+      <p>
+        My depth is in <strong>Laravel/PHP (8+ yrs)</strong> and <strong>Node.js/NestJS (5+ yrs)</strong>,
+        with strong frontend in Vue/Nuxt and React/Next, and cross-platform mobile in Flutter.
+        I care about correctness in systems that move money, hardening APIs to production standards,
+        and turning business requirements into shipped systems.
+      </p>
+    </div>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href={SITE.resumeUrl} class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#06140f] transition hover:opacity-90">
+        Download résumé
+      </a>
+      {SOCIALS.map((s) => (
+        <a href={s.href} target={s.href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer" class="rounded-lg border border-app px-5 py-2.5 text-sm font-semibold text-main transition hover:border-accent hover:text-accent">
+          {s.label}
+        </a>
+      ))}
+    </div>
+
+    <!-- Experience timeline -->
+    <h2 class="mt-16 text-2xl font-bold tracking-tight text-main">Experience</h2>
+    <div class="mt-8 space-y-10 border-l border-app pl-6">
+      {
+        experience.map((job) => (
+          <div class="relative">
+            <span class="absolute -left-[1.83rem] top-1.5 h-2.5 w-2.5 rounded-full bg-accent" aria-hidden="true" />
+            <p class="font-mono text-xs text-accent">{job.period} · {job.location}</p>
+            <h3 class="mt-1 text-lg font-semibold text-main">{job.role}</h3>
+            <p class="text-muted">{job.company}</p>
+            <ul class="mt-3 space-y-1.5">
+              {job.points.map((p) => (
+                <li class="text-sm leading-relaxed text-muted">— {p}</li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <!-- Education -->
+    <h2 class="mt-16 text-2xl font-bold tracking-tight text-main">Education</h2>
+    <div class="mt-6 space-y-3">
+      <div>
+        <p class="font-semibold text-main">B.Eng, Mechanical Engineering</p>
+        <p class="text-sm text-muted">Federal University of Technology, Owerri (FUTO) · 2011 — 2016</p>
+      </div>
+      <div>
+        <p class="font-semibold text-main">Certification, Software Development</p>
+        <p class="text-sm text-muted">Compunet Technologies · 2018</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

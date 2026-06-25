@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(bash -c 'shopt -s dotglob && mv nuclear-nova/* . && rmdir nuclear-nova && echo moved')",
+      "Bash(npx astro *)",
+      "Bash(node *)"
+    ]
+  }
+}

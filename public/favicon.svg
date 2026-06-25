@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="28" fill="#0b0f14"/>
+  <text x="50%" y="52%" dominant-baseline="central" text-anchor="middle"
+        font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="74"
+        font-weight="700" fill="#e6edf3" letter-spacing="-2">D</text>
+  <circle cx="96" cy="92" r="9" fill="#2dd4bf"/>
+</svg>
