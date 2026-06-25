@@ -39,5 +39,40 @@ export const SITES: Site[] = [
     role: 'WordPress design & build',
     tags: ['WordPress'],
   },
+  {
+    name: 'Spiral Marketing',
+    url: 'https://spiralmarketing.com',
+    blurb: 'Website for a digital marketing agency — services, work, and lead capture.',
+    role: 'WordPress design & build',
+    tags: ['WordPress'],
+  },
+  {
+    name: 'Annie Marketplace',
+    url: 'https://anniemarketplace.com',
+    blurb: 'Online storefront for Annie Frozen SuperStore, a frozen-foods retailer.',
+    role: 'WordPress design & build',
+    tags: ['WordPress'],
+  },
+  {
+    name: 'David-Duke Egbom',
+    url: 'https://daviddukeegbom.com',
+    blurb: 'Official website for a public figure — “A Voice Shaping The Future.”',
+    role: 'WordPress design & build',
+    tags: ['WordPress'],
+  },
+  {
+    name: 'Nnachedom Fredrick Eneh',
+    url: 'https://nnachedomfrederickeneh.com',
+    blurb: 'Personal profile website.',
+    role: 'WordPress design & build',
+    tags: ['WordPress'],
+  },
+  {
+    name: 'Somachukwu Clare Eneh',
+    url: 'https://sonmachukwuclareeneh.com',
+    blurb: 'Personal profile website.',
+    role: 'WordPress design & build',
+    tags: ['WordPress'],
+  },
   // Add more sites here — see README → "How to add a Web / WordPress site".
 ];
