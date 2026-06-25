@@ -15,6 +15,7 @@ no login — it's all files in this repo.
 | Add a **case study**                | new `.mdx` in `src/content/projects/`        |
 | Add a **Web / WordPress site**      | `src/data/sites.ts`                          |
 | Change my **name, email, socials**  | `src/consts.ts`                              |
+| Turn on the **contact form**        | `src/pages/contact.astro` (Web3Forms key)    |
 | Edit the **About / Contact** copy   | `src/pages/about.astro`, `contact.astro`     |
 | Edit the **homepage** copy          | `src/pages/index.astro`                      |
 | Swap the **résumé PDF**             | replace `public/Daniel-Odiachi-Resume.pdf`   |
@@ -144,7 +145,39 @@ edit them. `npm run dev` to preview.
 
 ---
 
-## 5. Images {#images}
+## 5. The contact form (Web3Forms)
+
+The form on `/contact` uses **[Web3Forms](https://web3forms.com)** — a free service
+that emails you each submission, no backend or server needed.
+
+> **Current status: NOT activated.** The key in `src/pages/contact.astro` is still
+> the placeholder, so the form shows *"Form not yet activated,"* the Send button is
+> disabled, and only the email/social links work. Activate it to make it live.
+
+### Activate it
+
+1. Go to https://web3forms.com, enter the email address where you want messages to
+   land, and copy the **access key** they send you.
+2. In `src/pages/contact.astro`, replace the placeholder on this line:
+   ```ts
+   const WEB3FORMS_KEY = 'YOUR-WEB3FORMS-ACCESS-KEY';   // ← paste your key here
+   ```
+3. Commit + push. The form enables itself automatically — `formEnabled` flips to
+   `true` the moment the key isn't the placeholder, the Send button activates, and
+   submissions start arriving in your inbox.
+
+### Good to know
+
+- The access key is **public** by design (it ships in the page HTML). It only
+  permits sending to *your* configured address — nothing sensitive is exposed.
+- A hidden honeypot field (`botcheck`) is already in place for basic spam defense.
+- Submissions arrive as email. If a send fails, the form tells the visitor to email
+  you directly (`SITE.email` from `consts.ts`).
+- To change the email subject line, edit the hidden `subject` field in the form.
+
+---
+
+## 6. Images {#images}
 
 Anything in `public/` is served from the site root. Drop a file in and reference
 it with a leading slash:
@@ -157,7 +190,7 @@ committing so the page stays fast.
 
 ---
 
-## 6. Local development
+## 7. Local development
 
 ```sh
 npm install       # first time only
@@ -171,7 +204,7 @@ you, it'll build on Cloudflare.
 
 ---
 
-## 7. Safety net & troubleshooting
+## 8. Safety net & troubleshooting
 
 - **Build fails after an edit?** Read the error — it usually names the file and
   field. The most common cause is a case-study frontmatter typo or a missing
