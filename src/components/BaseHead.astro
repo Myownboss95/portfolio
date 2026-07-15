@@ -12,15 +12,60 @@ const pageTitle = title ? `${title} — ${SITE.name}` : SITE.title;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(image, Astro.site);
 
+const personId = `${SITE.url}/#person`;
+
+// A single @graph keeps the Person and WebSite nodes linked by @id, so Google
+// consolidates every page's markup into one entity rather than many loose ones.
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: SITE.name,
-  jobTitle: 'Senior Fullstack Engineer & Technical Lead',
-  email: SITE.email,
-  url: SITE.url,
-  sameAs: SOCIALS.filter((s) => s.href.startsWith('http')).map((s) => s.href),
-  description: SITE.description,
+  '@graph': [
+    {
+      '@type': 'Person',
+      '@id': personId,
+      name: SITE.name,
+      givenName: 'Daniel',
+      familyName: 'Odiachi',
+      jobTitle: 'Senior Fullstack Engineer & Technical Lead',
+      email: SITE.email,
+      url: SITE.url,
+      image: new URL('/og.png', Astro.site).href,
+      description: SITE.description,
+      sameAs: SOCIALS.filter((s) => s.href.startsWith('http')).map((s) => s.href),
+      knowsAbout: [
+        'Backend engineering',
+        'Fintech',
+        'Cross-border payments',
+        'Virtual card issuance',
+        'KYC and AML compliance',
+        'End-to-end encryption',
+        'PHP',
+        'Laravel',
+        'Node.js',
+        'NestJS',
+        'TypeScript',
+        'API design',
+      ],
+      alumniOf: {
+        '@type': 'CollegeOrUniversity',
+        name: 'Federal University of Technology, Owerri',
+      },
+      worksFor: [
+        { '@type': 'Organization', name: 'Hizo Africa' },
+        { '@type': 'Organization', name: 'Dantown' },
+      ],
+      mainEntityOfPage: { '@id': `${SITE.url}/` },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE.url}/#website`,
+      url: SITE.url,
+      name: SITE.title,
+      description: SITE.description,
+      inLanguage: 'en',
+      publisher: { '@id': personId },
+      about: { '@id': personId },
+    },
+  ],
 };
 ---
 
@@ -36,16 +81,24 @@ const jsonLd = {
 
 <!-- Open Graph -->
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:locale" content="en_US" />
 <meta property="og:url" content={canonical} />
 <meta property="og:title" content={pageTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={`${SITE.name} — ${SITE.tagline}`} />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@dannytobs" />
+<meta name="twitter:creator" content="@dannytobs" />
 <meta name="twitter:title" content={pageTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={`${SITE.name} — ${SITE.tagline}`} />
 
 <!-- No-flash theme init: runs before paint -->
 <script is:inline>
