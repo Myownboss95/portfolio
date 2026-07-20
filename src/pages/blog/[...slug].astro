@@ -1,0 +1,75 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export const getStaticPaths = (async () => {
+  // Same draft rule as the listing: previewable in dev, absent from the build.
+  const posts = await getCollection('blog', ({ data }) =>
+    import.meta.env.PROD ? !data.draft : true
+  );
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const d = post.data;
+
+const dateFormat = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<BaseLayout title={d.title} description={d.description}>
+  <article class="mx-auto max-w-3xl px-5 py-16">
+    <a href="/blog" class="font-mono text-sm text-muted transition hover:text-accent">← All posts</a>
+
+    <header class="mt-6 border-b border-app pb-8">
+      {d.tags.length > 0 && (
+        <div class="mb-3 flex flex-wrap gap-2">
+          {d.tags.map((tag) => (
+            <span class="rounded-full bg-soft px-2.5 py-0.5 font-mono text-xs text-accent">{tag}</span>
+          ))}
+        </div>
+      )}
+
+      <h1 class="text-3xl font-bold tracking-tight text-main sm:text-4xl">{d.title}</h1>
+
+      <p class="mt-3 font-mono text-sm text-faint">
+        <time datetime={d.pubDate.toISOString()}>{dateFormat.format(d.pubDate)}</time>
+        {d.updatedDate && (
+          <>
+            {' · updated '}
+            <time datetime={d.updatedDate.toISOString()}>{dateFormat.format(d.updatedDate)}</time>
+          </>
+        )}
+        {d.draft && <span class="ml-2 rounded border border-app px-1.5 py-0.5 text-faint">draft</span>}
+      </p>
+
+      <p class="mt-4 text-lg leading-relaxed text-muted">{d.description}</p>
+    </header>
+
+    <div class="prose-case mt-8">
+      <Content />
+    </div>
+
+    <footer class="mt-14 border-t border-app pt-6">
+      <a href="/blog" class="font-mono text-sm text-muted transition hover:text-accent">← All posts</a>
+    </footer>
+  </article>
+</BaseLayout>
+
+<style>
+  /* MDX headings render outside this component's style scope — :global reaches
+     them. Without the scroll-margin an anchor jump parks the heading under the
+     sticky header. */
+  .prose-case :global(h2),
+  .prose-case :global(h3) {
+    scroll-margin-top: 5.5rem;
+  }
+</style>

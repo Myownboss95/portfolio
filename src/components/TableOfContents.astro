@@ -1,0 +1,259 @@
+---
+/**
+ * Case-study table of contents.
+ *
+ * Two variants of the same link list:
+ *  - `floating` parks the list in the empty gutter to the left of the centred
+ *    article on very wide viewports, so the prose keeps its 3xl reading measure.
+ *  - `inline` is a collapsed <details> that sits above the prose on everything
+ *    narrower — closed by default so mobile still opens straight into the story.
+ *
+ * Each variant hides itself with CSS at the other's breakpoint, so exactly one
+ * is visible (and focusable) at a time.
+ */
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+  variant: 'floating' | 'inline';
+}
+
+const { headings, variant } = Astro.props;
+---
+
+{
+  headings.length > 0 && (
+    <div class:list={['toc', `toc--${variant}`]}>
+      <div class="toc__sticky">
+        {variant === 'floating' ? (
+          <nav aria-label="On this page">
+            <p class="toc__label">On this page</p>
+            <ul class="toc__list">
+              {headings.map((h) => (
+                <li>
+                  <a class="toc__link" href={`#${h.slug}`} data-toc-link={h.slug}>
+                    {h.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : (
+          <details class="toc__details">
+            <summary class="toc__summary">
+              <span class="toc__label">On this page</span>
+              <svg
+                class="toc__chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </summary>
+            <nav aria-label="On this page">
+              <ul class="toc__list">
+                {headings.map((h) => (
+                  <li>
+                    <a class="toc__link" href={`#${h.slug}`} data-toc-link={h.slug}>
+                      {h.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </details>
+        )}
+      </div>
+    </div>
+  )
+}
+
+<style>
+  /* The floating variant only appears once the viewport is wide enough for a
+     full gutter beside a max-w-3xl (768px) article: 768 + 2 × ~230px. Below
+     that there is nowhere to put it without squeezing the prose, so the
+     collapsed <details> takes over. */
+  .toc--floating {
+    display: none;
+  }
+
+  .toc--inline {
+    margin-top: 2rem;
+  }
+
+  @media (min-width: 1280px) {
+    .toc--floating {
+      display: block;
+      /* Positioned against the article wrapper (position: relative) and pushed
+         entirely into the left gutter, so the article itself stays centred. */
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 100%;
+      width: 13rem;
+      padding-right: 1.5rem;
+    }
+    .toc--floating .toc__sticky {
+      position: sticky;
+      /* Clears the sticky header (~65px) plus breathing room. */
+      top: 6.5rem;
+    }
+    .toc--inline {
+      display: none;
+    }
+  }
+
+  .toc__label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .toc__list {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .toc__link {
+    display: block;
+    padding: 0.3rem 0 0.3rem 0.75rem;
+    /* Rail on the left; the active item recolours it. Border (not a pseudo
+       element) so it lines up with the text box in both themes. */
+    border-left: 2px solid var(--border);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .toc__link:hover {
+    color: var(--text);
+    border-left-color: var(--text-faint);
+  }
+  .toc__link[aria-current='true'] {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  /* --- inline (<details>) chrome --- */
+  .toc__details {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-soft);
+  }
+  .toc__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.7rem 0.9rem;
+    cursor: pointer;
+    list-style: none;
+  }
+  .toc__summary::-webkit-details-marker {
+    display: none;
+  }
+  .toc__chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-faint);
+    transition: transform 150ms ease;
+  }
+  .toc__details[open] .toc__chevron {
+    transform: rotate(180deg);
+  }
+  .toc__details nav {
+    padding: 0 0.9rem 0.9rem;
+  }
+  .toc__details .toc__list {
+    margin-top: 0;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    // Both variants render the same hrefs, so one script drives them all; the
+    // guard keeps the second component instance from re-registering listeners.
+    if (window.__tocInit) return;
+    window.__tocInit = true;
+
+    const init = () => {
+      const links = Array.from(document.querySelectorAll('[data-toc-link]'));
+      if (!links.length) return;
+
+      const headings = links
+        .map((l) => document.getElementById(l.dataset.tocLink))
+        .filter(Boolean);
+      if (!headings.length) return;
+
+      let current = null;
+      const setActive = (id) => {
+        if (id === current) return;
+        current = id;
+        links.forEach((l) => {
+          if (l.dataset.tocLink === id) l.setAttribute('aria-current', 'true');
+          else l.removeAttribute('aria-current');
+        });
+      };
+
+      // The active section is the last heading that has scrolled past the line
+      // just below the sticky header. Deriving it from geometry (rather than
+      // from whichever entry happened to fire) keeps it stable when several
+      // headings are on screen at once.
+      const recompute = () => {
+        const line = 120;
+        let active = null;
+        for (const h of headings) {
+          if (h.getBoundingClientRect().top <= line) active = h.id;
+        }
+        // Bottom of the page: the last section can be too short to ever cross
+        // the line, so claim it once we run out of scroll.
+        if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) {
+          active = headings[headings.length - 1].id;
+        }
+        setActive(active);
+      };
+
+      if ('IntersectionObserver' in window) {
+        // Fires whenever a heading enters or leaves the top band of the
+        // viewport — exactly the moments the active section can change.
+        const io = new IntersectionObserver(recompute, {
+          rootMargin: '-120px 0px -40% 0px',
+          threshold: 0,
+        });
+        headings.forEach((h) => io.observe(h));
+      }
+      // Cheap safety net for short trailing sections and for browsers without
+      // IntersectionObserver. rAF-throttled so it never reads layout twice in
+      // a frame.
+      let ticking = false;
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(() => {
+            ticking = false;
+            recompute();
+          });
+        },
+        { passive: true }
+      );
+      recompute();
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

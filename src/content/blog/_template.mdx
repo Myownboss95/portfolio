@@ -1,0 +1,37 @@
+---
+# ─────────────────────────────────────────────────────────────────────────────
+# HOW TO WRITE A POST
+# 1. Copy this file, rename it to my-post-slug.mdx (the filename = the URL).
+#    (Files starting with "_" are ignored, so this template never publishes.)
+# 2. Fill in the frontmatter below and write the post in the body.
+# 3. Save + `git push`. Cloudflare rebuilds the site automatically.
+# ─────────────────────────────────────────────────────────────────────────────
+title: "Post title"
+description: "One or two sentences. Shows on /blog, in RSS, and as the SEO description."
+pubDate: 2026-01-01          # publish date (YYYY-MM-DD). Sorts the list, newest first.
+# updatedDate: 2026-02-01    # optional — only if you materially revise the post
+tags: ["RAG", "LLM"]         # optional — free-form topic tags
+draft: true                  # true = shows in `npm run dev` only, never in production
+# cover: "/covers/my-post.png"  # optional — image path under public/
+---
+
+Open with the point. One short paragraph that says what this post argues, so a
+reader knows in ten seconds whether to keep going.
+
+## A section heading
+
+Plain Markdown below the frontmatter. Use `##` for sections and `###` for detail
+inside a section. Fenced code blocks work:
+
+```ts
+const answer = await retrieve(query);
+```
+
+## Another section
+
+Lists, **bold**, `inline code`, and [links](https://example.com) all render with
+the same typography as the case studies.
+
+## What I'd do differently
+
+Close with the takeaway — the thing you'd tell someone about to build this.

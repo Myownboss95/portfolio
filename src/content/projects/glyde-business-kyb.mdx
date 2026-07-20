@@ -1,0 +1,91 @@
+---
+title: "Business KYB Verification"
+role: "Senior Backend Engineer"
+company: "Glyde"
+period: "2023 — Present"
+summary: "Know Your Business verification for a payment service provider — registry lookups across markets with uneven coverage, ultimate beneficial owner resolution through nested ownership, and a review queue that routes to humans only where judgement is actually required."
+stack: ["Laravel", "PHP", "TypeScript", "Node.js", "Microservices"]
+domain: ["KYC", "Payments", "Security"]
+featured: true
+order: 2
+sourcePrivate: true
+---
+
+## The problem
+
+Verifying a person is a solved-ish problem: there's one human, one face, one government ID, and a handful of vendors who will check it for you. Verifying a *business* is a different shape of problem, and a payment service provider can't onboard a merchant without doing it.
+
+A business is not a document. It's an entity in a registry, with directors, with shareholders — and those shareholders are frequently other companies, which have their own shareholders. The regulatory question isn't "does this company exist," it's **"which actual humans ultimately control the money moving through this account?"** Answering that means walking a tree, and the tree is described across incorporation certificates, registry records, and whatever the merchant chose to upload.
+
+Meanwhile the commercial pressure runs the other way: every hour a legitimate merchant spends in a verification queue is an hour they're not processing payments, and a competitor is one signup form away.
+
+## Constraints
+
+- **Registry coverage was uneven.** Some markets expose a clean company registry API. Some expose a search page. Some expose neither, and the record only exists on paper the merchant photographs. One code path could not serve all three.
+- **Ownership is a graph, not a field.** Ultimate beneficial ownership resolves through layers of corporate shareholding. A schema with a `director_name` column is already wrong.
+- **Documents arrived in every format imaginable** — scans, phone photos, PDFs, screenshots — with no consistent layout across jurisdictions or decades.
+- **Ops was the bottleneck.** Review capacity, not verification logic, set the ceiling on how fast merchants could onboard.
+- **Being wrong is regulatory, not cosmetic.** A merchant who shouldn't have been approved is a compliance incident, so "approve when unsure" was never available as a default.
+
+## What I built
+
+A KYB pipeline that treats the business as a **graph of entities and people** and treats human reviewers as a scarce resource to be spent deliberately.
+
+```text
+   Merchant submits business details + documents
+                    │
+                    ▼
+      ┌─────────────────────────────┐
+      │  Source adapters            │   registry API  ─┐
+      │  (one interface,            │   registry scrape│─▶ normalised
+      │   many market backends)     │   document-only ─┘   entity record
+      └──────────────┬──────────────┘
+                     │
+                     ▼
+      ┌─────────────────────────────┐
+      │  Document extraction        │ → candidate fields
+      │  + deterministic validation │   (format, cross-field, registry match)
+      └──────────────┬──────────────┘
+                     │
+                     ▼
+      ┌─────────────────────────────┐
+      │  Ownership graph            │  company ──owns──▶ company
+      │  resolve UBO by walking     │        │             │
+      │  shareholding until you     │        ▼             ▼
+      │  reach natural persons      │     person        person  ← UBOs
+      └──────────────┬──────────────┘
+                     │
+          confident ──┼── ambiguous / conflicting
+                     │              │
+                     ▼              ▼
+              verified state    review queue
+                     │         (evidence attached)
+                     └──────┬───────┘
+                            ▼
+                   merchant tier → what they may do
+```
+
+- **A source-adapter layer**, so "how we verify in this market" is a pluggable backend behind one interface. Adding a market means writing an adapter, not branching the pipeline.
+- **An ownership graph** rather than flat fields — companies and people as nodes, shareholding and directorship as edges — resolved by walking upward until every branch terminates in a natural person.
+- **Extraction followed by deterministic validation.** Getting fields *out* of an inconsistent document and deciding whether those fields are *correct* are different problems. The second one is rules — format checks, cross-field consistency, matching against the registry record — and rules should be code, because code is right every time.
+- **Confidence-based routing into the review queue**, with the evidence attached: the source record, the extracted fields, and specifically what disagreed. A reviewer opens a case and sees the conflict, rather than starting from a folder of scans.
+- **Tiered gating** — verification state determines what a merchant may actually do, so onboarding can progress while deeper checks continue.
+
+## The decision that mattered
+
+**Automating retrieval and correlation, but never automating judgement.**
+
+The tempting version is a confidence threshold that auto-approves above some score. I didn't build that. What the pipeline automates is the *labour* — finding the registry record, pulling fields off a document, walking the ownership tree, noticing that two sources disagree. What stays human is the *call*, on every case the system isn't sure about.
+
+That split is what made ops throughput improvable without moving the risk needle. Reviewers stopped doing data entry and started doing the only thing they were ever uniquely good at: looking at a conflict and deciding. The queue got faster because each case arrived pre-assembled, not because the bar got lower.
+
+The second call was **modelling ownership as a graph on day one**, before anything demanded it. Flat director fields would have shipped sooner and then failed permanently the first time a merchant was owned by a holding company — a rewrite of the core model under regulatory pressure, which is the worst possible time to do one.
+
+## Impact
+
+- Business verification that works across markets with **very different registry maturity**, without a separate pipeline per market.
+- Ultimate beneficial owners resolved through nested corporate ownership rather than recorded as whatever name the merchant typed.
+- Human review focused on genuine ambiguity, with the evidence assembled in advance.
+- Verification state wired directly to merchant capability, so onboarding and compliance move together instead of blocking each other.
+
+_Source code is private. Architecture and decisions summarized here — happy to walk through the ownership resolution and review-routing detail in an interview._

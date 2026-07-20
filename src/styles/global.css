@@ -78,6 +78,62 @@ body {
   .border-app { border-color: var(--border); }
 }
 
+/* ----------------------------------------------------------------------------
+   Motion. `.reveal` elements fade/slide in when scrolled into view — a small
+   IntersectionObserver in BaseLayout adds `.is-visible`. If JS never runs the
+   content is still visible (the observer only ever *adds* the visible state,
+   and the no-js fallback below shows everything).
+---------------------------------------------------------------------------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* Staggered children — set --i on the element to delay it. */
+.reveal[style*="--i"] {
+  transition-delay: calc(var(--i) * 60ms);
+}
+
+/* Availability dot. */
+.status-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+.status-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--accent);
+  animation: status-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes status-ping {
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .status-dot::after {
+    animation: none;
+  }
+}
+
 /* Focus ring for keyboard users. */
 :where(a, button, input, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--accent);

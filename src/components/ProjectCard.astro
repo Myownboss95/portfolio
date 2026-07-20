@@ -1,43 +1,211 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import ProjectCover from './ProjectCover.astro';
+import { iconFor } from '../lib/tech-icon';
 
 interface Props {
   project: CollectionEntry<'projects'>;
 }
 
 const { project } = Astro.props;
-const { title, role, period, summary, stack, domain } = project.data;
+const { title, summary, stack, domain, cover } = project.data;
+
+// The first domain tag is the card's category. AI-track categories get the
+// accent treatment so the two tracks stay legible at a glance.
+const AI_DOMAINS = new Set(['AI', 'LLM', 'RAG', 'Agents', 'MCP']);
+const category = domain[0] ?? 'Engineering';
+const isAiCategory = AI_DOMAINS.has(category);
+
+/*
+ * Tech chips. First choice is the real logo from `data/tech-icons` — the same
+ * build-time-inlined SVG the homepage stack grid uses, so nothing is hotlinked.
+ * Anything with no logo (an SDK, a cipher suite, a protocol) keeps the
+ * hand-typed abbreviation chip below rather than getting a made-up mark.
+ */
+
+// Short, readable abbreviations for the tech chips. No logo packages, no
+// hotlinked images — two or three characters, drawn with type.
+const ABBR: Record<string, string> = {
+  'Laravel': 'Lv',
+  'PHP': 'PHP',
+  'PostgreSQL': 'PG',
+  'PostgreSQL / pgvector': 'PGV',
+  'pgvector': 'PGV',
+  'Redis': 'Rds',
+  'TypeScript': 'TS',
+  'JavaScript': 'JS',
+  'Node.js': 'Nd',
+  'Anthropic Claude': 'Cl',
+  'OpenAI': 'OAI',
+  'MCP': 'MCP',
+  'REST': 'API',
+  'Flutter': 'Fl',
+  'Flutter / Dart': 'Fl',
+  'Dart': 'Dt',
+  'Interlace SDK': 'Il',
+  'Smile ID': 'SID',
+  'X25519': 'X25',
+  'AES-256-GCM': 'AES',
+  'HKDF-SHA256': 'HK',
+  'Python': 'Py',
+  'Docker': 'Dk',
+  'AWS': 'AWS',
+  'Vue': 'Vue',
+  'React': 'Re',
+  'Astro': 'As',
+  'Tailwind CSS': 'Tw',
+  'WordPress': 'WP',
+  'MySQL': 'My',
+  'GraphQL': 'GQL',
+};
+
+function abbreviate(name: string): string {
+  if (ABBR[name]) return ABBR[name];
+  const words = name.split(/[\s/._-]+/).filter(Boolean);
+  if (words.length > 1) return (words[0][0] + words[1][0]).toUpperCase();
+  const w = words[0] ?? name;
+  return w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w[1].toLowerCase();
+}
+
+const MAX_CHIPS = 5;
+const visibleStack = stack.slice(0, MAX_CHIPS);
+const overflow = Math.max(0, stack.length - MAX_CHIPS);
+const overflowNames = stack.slice(MAX_CHIPS);
 ---
 
 <a
   href={`/work/${project.id}`}
-  class="group flex flex-col rounded-xl border border-app bg-card p-6 transition hover:border-accent"
+  class="project-card group flex h-full flex-col overflow-hidden rounded-xl border border-app bg-card transition duration-200 hover:border-accent hover:shadow-lg hover:shadow-black/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
 >
-  <div class="mb-2 flex flex-wrap items-center gap-2">
-    {
-      domain.map((d) => (
-        <span class="rounded-full bg-soft px-2.5 py-0.5 font-mono text-xs text-accent">{d}</span>
-      ))
-    }
+  <!-- Media -->
+  <div class="relative">
+    <div class="cover-frame overflow-hidden border-b border-app">
+      <ProjectCover seed={project.id} cover={cover} alt="" class="cover-media" />
+    </div>
+
+    <!-- Category badge, overlapping the bottom-left corner of the media -->
+    <span
+      class:list={[
+        'absolute -bottom-3 left-4 inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 font-mono text-[11px] font-medium leading-none shadow-sm backdrop-blur-sm',
+        isAiCategory
+          ? 'border-accent/40 bg-accent/15 text-accent'
+          : 'border-app bg-soft text-muted',
+      ]}
+    >
+      {category}
+    </span>
   </div>
 
-  <h3 class="text-lg font-semibold text-main transition group-hover:text-accent">
-    {title}
-  </h3>
-  <p class="mt-0.5 text-sm text-faint">{role} · {period}</p>
+  <!-- Body -->
+  <div class="flex flex-1 flex-col p-5 pt-7">
+    <h3 class="text-base font-semibold leading-snug text-main transition group-hover:text-accent sm:text-lg">
+      {title}
+    </h3>
 
-  <p class="mt-3 flex-1 text-sm leading-relaxed text-muted">{summary}</p>
+    <p class="card-summary mt-2 text-sm leading-relaxed text-muted">{summary}</p>
 
-  <div class="mt-4 flex flex-wrap gap-1.5">
     {
-      stack.slice(0, 5).map((s) => (
-        <span class="rounded border border-app px-2 py-0.5 font-mono text-xs text-faint">{s}</span>
-      ))
+      stack.length > 0 && (
+        <div class="mt-5 flex flex-wrap items-center gap-1.5 pt-1">
+          <span class="sr-only">Built with: {stack.join(', ')}.</span>
+          {visibleStack.map((s) => {
+            const icon = iconFor(s);
+            // Brand marks carry their own hue per theme; concept glyphs carry
+            // none and inherit the chip's text colour.
+            const brandVars = icon?.dark
+              ? `--brand-dark:${icon.dark};--brand-light:${icon.light ?? icon.dark}`
+              : undefined;
+            return (
+              <span
+                aria-hidden="true"
+                title={s}
+                style={brandVars}
+                class="tech-chip inline-flex h-7 w-7 items-center justify-center rounded-md border border-app bg-soft font-mono text-[10px] font-medium leading-none text-faint transition group-hover:border-accent/30 group-hover:text-muted"
+              >
+                {icon ? (
+                  <svg class="chip-icon" viewBox="0 0 24 24" focusable="false" set:html={icon.body} />
+                ) : (
+                  abbreviate(s)
+                )}
+              </span>
+            );
+          })}
+          {overflow > 0 && (
+            <span
+              aria-hidden="true"
+              title={overflowNames.join(', ')}
+              class="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-dashed border-app px-1 font-mono text-[10px] leading-none text-faint"
+            >
+              +{overflow}
+            </span>
+          )}
+        </div>
+      )
     }
   </div>
-
-  <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent">
-    Read case study
-    <svg class="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-  </span>
 </a>
+
+<style>
+  /* Three-line clamp keeps every card body the same height in a grid row. */
+  .card-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .project-card {
+    transform: translateZ(0);
+  }
+
+  /* Logo chips. At rest the mark is dimmed and desaturated so a row of five
+     vendor palettes stays quiet next to the copy; hovering (or keyboard-
+     focusing) the card resolves them to full brand colour. */
+  .chip-icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--brand-dark, currentColor);
+    filter: saturate(0.5);
+    opacity: 0.8;
+    transition:
+      filter 0.2s ease,
+      opacity 0.2s ease;
+  }
+  :global(html.light) .chip-icon {
+    color: var(--brand-light, currentColor);
+  }
+  .project-card:hover .chip-icon,
+  .project-card:focus-visible .chip-icon {
+    filter: none;
+    opacity: 1;
+  }
+
+  .project-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .cover-frame :global(.cover-media) {
+    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  .project-card:hover .cover-frame :global(.cover-media),
+  .project-card:focus-visible .cover-frame :global(.cover-media) {
+    transform: scale(1.05);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-card,
+    .project-card:hover,
+    .cover-frame :global(.cover-media),
+    .project-card:hover .cover-frame :global(.cover-media),
+    .project-card:focus-visible .cover-frame :global(.cover-media) {
+      transform: none;
+      transition: none;
+    }
+    /* Colour still resolves on hover; only the easing is dropped. */
+    .chip-icon {
+      transition: none;
+    }
+  }
+</style>

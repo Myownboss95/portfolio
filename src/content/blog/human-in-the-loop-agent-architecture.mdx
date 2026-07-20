@@ -1,0 +1,119 @@
+---
+title: "Human-in-the-Loop Is an Architecture Decision"
+description: "Approval prompts bolted onto an agent produce rubber-stamping, not oversight. A four-question framework for deciding which actions pause, and where the line between reads and writes really sits."
+pubDate: 2026-07-07
+tags: ["Agents", "LLM", "Architecture", "Compliance"]
+draft: false
+---
+
+Human-in-the-loop usually shows up late, as a UX task: add a confirmation dialog
+before the agent does anything scary. That framing produces a system where the
+human is a liability shield rather than a control, and where the approval rate is
+99.7% because nobody can meaningfully review the 300th prompt of the day.
+
+Oversight that works is decided at design time, per tool, and it changes the
+shape of the system. Here is the framework I use.
+
+## Question 1: Is it a read or a write?
+
+This is the primary cut, and it is cruder than people want it to be. Reads run
+unattended. Writes pause. Start there and only move a tool across the line for a
+stated reason.
+
+The reason the cut is crude is that it is *checkable*. "Does this tool mutate
+state?" has one answer, it can be encoded in the tool definition, and the
+orchestrator can enforce it without understanding what the tool does. Any rule
+that requires interpreting intent will be applied inconsistently.
+
+Two important exceptions, both in the same direction:
+
+- **Reads that exfiltrate.** Pulling a full customer record into the context
+  window is a read that crosses a data boundary. Treat by redaction rather than
+  approval — return the fields the task needs, not the row.
+- **Reads that trigger.** Anything that hits a rate limit, costs money per call,
+  or emits a notification is not really a read.
+
+## Question 2: Is it reversible, and on what timescale?
+
+Writes are not one category. The useful axis is how long you have to undo it.
+
+```
+reversible instantly     → run, log, allow undo
+                           (update a case note, set a flag)
+
+reversible with effort   → run, notify a human immediately
+                           (send an internal message, re-run a check)
+
+reversible via process   → pause for approval
+                           (change a customer's KYC tier, adjust a limit)
+
+irreversible             → pause, and require the approver to be
+                           a different principal than the requester
+                           (move money, issue a card, close an account)
+```
+
+Most agent actions land in the top two bands, and treating them as if they were
+in the bottom band is what destroys approval quality. If you want a human to
+think carefully about the transfer, you cannot also ask them to click through
+forty note updates.
+
+## Question 3: What is the human actually being asked?
+
+An approval prompt that says "the agent wants to call `update_tier(user_123,
+tier=3)` — approve?" is unanswerable. The reviewer has no way to evaluate it
+without redoing the agent's work, so they will approve it.
+
+A reviewable prompt contains the *evidence*, not the action:
+
+- what the agent concluded, in one line
+- the source spans or records it concluded it from
+- which deterministic checks passed and which failed
+- what happens if this is wrong
+
+In [document extraction](/work/agentic-kyc-extraction), the difference between a
+usable review queue and a rubber stamp was showing the extracted value next to
+the region of the document it came from. The reviewer's job becomes comparison,
+which humans are fast and accurate at, instead of judgement under
+uncertainty, which they are not.
+
+## Question 4: What does the pause cost?
+
+Every checkpoint has a latency and a staffing cost, and those costs are what
+create pressure to remove the checkpoint later. So price it up front.
+
+If a tool is called 500 times a day and each approval takes 30 seconds, you have
+committed to roughly four hours of daily review. That is a headcount decision
+disguised as an architecture decision, and it is worth making it explicitly
+before shipping rather than discovering it when the queue backs up and someone
+proposes auto-approving "the easy ones."
+
+This is the real tradeoff, and it does not have a clean answer. Fewer
+checkpoints means faster throughput and a genuine increase in the probability
+that something wrong reaches a customer. More checkpoints means a review queue
+that degrades into pattern-matching, which provides the *appearance* of oversight
+while providing less of it than a well-designed automatic check would. I would
+rather have three checkpoints a reviewer takes seriously than thirty they clear
+by reflex — and the way to get there is to move as much as possible into
+deterministic validation, so the human only sees the genuinely ambiguous cases.
+
+## Where the loop lives
+
+One structural note. The pause belongs in the orchestrator, not in the tool and
+not in the prompt.
+
+Asking the model to request permission is not a control — it is a suggestion the
+model can skip. Putting the check inside each tool implementation means it is
+reimplemented per tool and drifts. The orchestrator sits between the model and
+every tool call, already knows the classification, and is ordinary deterministic
+code:
+
+```ts
+const tool = registry.get(call.name);
+if (tool.class !== "read" && tool.reversibility !== "instant") {
+  return await approvals.request(call, buildEvidence(state));
+}
+return await tool.invoke(call.args);
+```
+
+Nine lines, enforced for every tool, unbypassable by a persuasive prompt. That is
+what makes it an architecture decision rather than a UX one.

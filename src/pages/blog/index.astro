@@ -1,0 +1,66 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Drafts stay visible in `npm run dev` so you can preview a post before it ships,
+// and are dropped from the production build.
+const posts = (await getCollection('blog', ({ data }) => import.meta.env.PROD ? !data.draft : true))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const dateFormat = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+---
+
+<BaseLayout title="Blog" description="Notes on building LLM systems that hold up in production — retrieval, agents, and the fintech constraints they run into.">
+  <section class="mx-auto max-w-5xl px-5 py-16">
+    <h1 class="text-3xl font-bold tracking-tight text-main sm:text-4xl">Blog</h1>
+    <p class="mt-3 max-w-2xl text-lg text-muted">
+      Notes from building LLM and payments systems that have to survive real users —
+      retrieval, agents, and the constraints a regulated product puts on both.
+      <a href="/rss.xml" class="text-accent hover:underline">RSS</a>.
+    </p>
+
+    {
+      posts.length > 0 ? (
+        <div class="mt-12 flex flex-col divide-y divide-app border-t border-app">
+          {posts.map((post) => (
+            <article class="py-7">
+              <a href={`/blog/${post.id}`} class="group block">
+                <time
+                  datetime={post.data.pubDate.toISOString()}
+                  class="font-mono text-xs uppercase tracking-wider text-faint"
+                >
+                  {dateFormat.format(post.data.pubDate)}
+                </time>
+                <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-main transition group-hover:text-accent">
+                  {post.data.title}
+                  {post.data.draft && (
+                    <span class="ml-2 rounded border border-app px-1.5 py-0.5 align-middle font-mono text-xs font-normal text-faint">
+                      draft
+                    </span>
+                  )}
+                </h2>
+                <p class="mt-2 max-w-2xl leading-relaxed text-muted">{post.data.description}</p>
+              </a>
+
+              {post.data.tags.length > 0 && (
+                <div class="mt-3 flex flex-wrap gap-2">
+                  {post.data.tags.map((tag) => (
+                    <span class="rounded-full bg-soft px-2.5 py-0.5 font-mono text-xs text-accent">{tag}</span>
+                  ))}
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p class="mt-12 rounded-lg border border-app bg-soft px-4 py-6 text-muted">
+          No posts yet — the first one is being written.
+        </p>
+      )
+    }
+  </section>
+</BaseLayout>

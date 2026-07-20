@@ -1,0 +1,109 @@
+---
+title: "Structured LLM Output You Can Actually Trust"
+description: "JSON mode and typed schemas stop parse errors, not wrong answers. The validation that matters happens after the model, and it's boring deterministic code you have to write yourself."
+pubDate: 2026-06-22
+tags: ["LLM", "Validation", "TypeScript", "Data Extraction"]
+draft: false
+---
+
+Structured output is the most oversold feature in the current LLM tooling stack.
+Constrained decoding and typed schemas genuinely solved a real problem: you no
+longer get a trailing comma, a markdown fence around your JSON, or a chatty
+preamble. That problem was annoying and it is gone.
+
+It was also the easy half. **A schema constrains the shape of the output, not its
+truth.** `{"date_of_birth": "1990-02-31"}` is valid JSON, matches
+`z.string()`, and describes a day that does not exist.
+
+## What a schema can and cannot enforce
+
+Worth being precise about the boundary, because it is where most extraction
+pipelines leak:
+
+| Guaranteed by the schema | Not guaranteed by the schema |
+| --- | --- |
+| Field is present | Field is correct |
+| Field is a string | String is a valid date |
+| Enum member is one of N | The right member was chosen |
+| Array has items | Items are not duplicated or hallucinated |
+| Number is a number | Number appears anywhere in the source |
+
+Every row on the right is a bug class that reaches production if the only gate is
+the schema. In [document extraction for KYC](/work/agentic-kyc-extraction), the
+right-hand column is the entire job — a structurally perfect record with a
+transposed ID number is worse than a parse failure, because a parse failure is
+loud.
+
+## Three layers, in order
+
+The pattern I keep coming back to is a pipeline where each stage can only reject,
+never repair by guessing.
+
+**1. Shape.** Parse into a typed schema. Zod, Pydantic, whatever. Cheap, and it
+fails fast.
+
+**2. Semantics.** Deterministic rules the model was never asked to reason about.
+This is ordinary code and it is where the value is:
+
+```ts
+const checks = [
+  ({ dob }) => isRealDate(dob) || "dob is not a calendar date",
+  ({ dob }) => yearsSince(dob) >= 18 || "applicant under 18",
+  ({ expiry, dob }) => expiry > dob || "expiry precedes birth",
+  ({ idNumber }) => checksumValid(idNumber) || "id checksum failed",
+  ({ amount }) => amount.decimalPlaces() <= 2 || "sub-cent precision",
+];
+```
+
+Checksums deserve special mention. A large fraction of the identifiers worth
+extracting — national ID numbers, IBANs, card PANs, VAT numbers — carry a check
+digit. That is a free, deterministic, zero-false-positive detector for the single
+most common extraction error, which is a digit transposition. If your document
+format has one and you are not verifying it, you are choosing not to catch the
+bug you have most of.
+
+**3. Provenance.** For every extracted value, require the model to also return the
+span of source text it came from, then verify that span actually occurs in the
+input. This is a normalised substring check — strip whitespace, fold case — and
+it catches fabrication directly rather than probabilistically. If the model
+returns an ID number whose supporting span is not in the document, the value did
+not come from the document.
+
+Provenance is also the thing that makes review possible. A human checking a
+flagged field wants to see where it came from, not re-read four pages.
+
+## Do not let the model repair its own failures
+
+The tempting loop is: validation fails, feed the error back, ask for a
+correction. Sometimes this works. Structurally, it is the model marking its own
+homework, and it has a specific pathology — the model will satisfy the stated
+constraint by adjusting whatever is cheapest, which is often not the wrong field.
+Tell it "expiry precedes birth" and it may move the birth date.
+
+Bound it hard: one repair attempt, only for shape errors, never for semantic
+ones. A semantic failure means the extraction is untrustworthy, and the correct
+output is not a corrected record — it is a routed record, with the failed check
+attached.
+
+## The tradeoff nobody mentions
+
+Deterministic validation raises your false-rejection rate. Real documents are
+messy: legitimate IDs from older issuance batches fail modern checksums,
+handwritten dates are genuinely ambiguous, scanned forms have fields that are
+truly blank rather than missed. Tighten the rules and you push clean records into
+the human queue, which is the cost the whole pipeline exists to reduce.
+
+So the rules are a dial, not a constant, and the way to set it is to look at what
+each error costs. A false rejection costs a few minutes of review. A false
+acceptance in a compliance flow costs a remediation exercise and possibly a
+regulator conversation. Those are not comparable, and the dial should sit
+accordingly — but you should know where you set it and why, rather than
+discovering your threshold by accident.
+
+## Where this leaves the schema
+
+Still useful. Just relocated in your mental model: the schema is a parser, not a
+guarantee. Treat the model's output the way you treat a request body from an
+untrusted client — shape-check it at the boundary, then run every business rule
+you would have run anyway. There is no version of this where the model's
+confidence substitutes for the check.

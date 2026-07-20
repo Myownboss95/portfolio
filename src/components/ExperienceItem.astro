@@ -1,0 +1,146 @@
+---
+import type { Job } from '../data/experience';
+
+interface Props {
+  job: Job;
+  /** Stagger index for the `.reveal` scroll-in animation. */
+  index: number;
+  /** Most recent role ships open so the page never reads as empty. */
+  open?: boolean;
+}
+
+const { job, index, open = false } = Astro.props;
+
+// A role that is still running gets a solid dot; finished roles get a hollow
+// one. Derived from the existing copy so the timeline stays scannable without
+// adding a new field to the data.
+const isCurrent = /present/i.test(job.period);
+
+const count = job.points.length;
+---
+
+<details class="exp reveal group relative" open={open} style={`--i:${index}`}>
+  <summary
+    class="flex cursor-pointer list-none items-start gap-3 rounded-xl border border-app bg-card p-5 transition duration-200 hover:border-accent/60"
+  >
+    <span
+      class:list={[
+        'exp-dot absolute -left-[1.8125rem] top-[1.65rem] h-2.5 w-2.5 rounded-full',
+        isCurrent ? 'bg-accent' : 'border border-accent/60 bg-app',
+      ]}
+      aria-hidden="true"></span>
+
+    <div class="min-w-0 flex-1">
+      <!-- Meta row: everything needed to place the role without expanding it. -->
+      <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs">
+        <span class="text-accent">{job.period}</span>
+        <span class="text-faint" aria-hidden="true">·</span>
+        <span class="text-faint">{job.location}</span>
+        <span class="text-faint" aria-hidden="true">·</span>
+        <span class="text-faint">{count} {count === 1 ? 'highlight' : 'highlights'}</span>
+      </p>
+
+      <h3 class="mt-1.5 text-lg font-semibold text-main transition group-hover:text-accent">
+        {job.role}
+      </h3>
+      <p class="text-sm text-muted">{job.company}</p>
+
+      <!-- Teaser: only meaningful while collapsed, hidden by CSS once [open]. -->
+      <p class="exp-teaser mt-2 line-clamp-1 text-sm text-faint">{job.points[0]}</p>
+    </div>
+
+    <svg
+      class="exp-chevron mt-1 h-4 w-4 shrink-0 text-faint transition-transform duration-300 group-hover:text-accent"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+  </summary>
+
+  <ul class="space-y-2 px-5 pb-5 pt-3">
+    {
+      job.points.map((p) => (
+        <li class="flex gap-2 text-sm leading-relaxed text-muted">
+          <span class="mt-[0.6em] h-px w-2.5 shrink-0 bg-accent/50" aria-hidden="true" />
+          <span>{p}</span>
+        </li>
+      ))
+    }
+  </ul>
+</details>
+
+<style>
+  /* Kill the native disclosure triangle in every engine — WebKit needs the
+     -webkit- pseudo, everyone else honours `display: block` on the summary. */
+  .exp > summary {
+    list-style: none;
+  }
+  .exp > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .exp[open] > summary {
+    /* Open cards read as one surface with the bullet list below them. */
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+  }
+  .exp[open] .exp-chevron {
+    transform: rotate(180deg);
+  }
+  .exp[open] .exp-teaser {
+    display: none;
+  }
+
+  /* The bullet list continues the card's border while open. */
+  .exp[open] > ul {
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-bottom-left-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+    background: var(--bg-card);
+  }
+
+  /* Dot punches a hole in the timeline rule so it reads as a node, not an
+     overlap. Uses the page background var so it flips with the theme. */
+  .exp-dot {
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+
+  /* CSS-only disclosure animation. `interpolate-size` lets `auto` be
+     interpolated; `allow-discrete` keeps the element rendered through the
+     closing transition. Browsers without ::details-content simply snap open,
+     which is the correct no-JS fallback. */
+  .exp {
+    interpolate-size: allow-keywords;
+  }
+  .exp::details-content {
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      block-size 300ms ease,
+      opacity 200ms ease,
+      content-visibility 300ms;
+    transition-behavior: allow-discrete;
+  }
+  .exp[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .exp::details-content,
+    .exp[open]::details-content {
+      transition: none;
+      block-size: auto;
+      opacity: 1;
+    }
+    .exp:not([open])::details-content {
+      block-size: 0;
+    }
+  }
+</style>

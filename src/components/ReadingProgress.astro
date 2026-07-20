@@ -1,0 +1,97 @@
+---
+/**
+ * Thin accent bar pinned to the very top of the viewport that tracks how far
+ * the reader has moved through a single element (the <article>), not the whole
+ * document — otherwise the footer would eat the last few percent and the bar
+ * would never look "finished" at the end of the prose.
+ */
+interface Props {
+  /** CSS selector for the element being read. */
+  target?: string;
+}
+
+const { target = 'article' } = Astro.props;
+---
+
+{/* aria-hidden: this is decorative chrome, the scroll position is already
+    conveyed natively by the scrollbar. */}
+<div class="reading-progress" aria-hidden="true">
+  <span class="reading-progress__bar" data-progress-bar></span>
+</div>
+
+<style>
+  /* z-50 territory: the site header is sticky at z-40, so the bar has to sit
+     above it to stay visible while the header is pinned. */
+  .reading-progress {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    height: 3px;
+    pointer-events: none;
+    /* No track colour — an empty bar should read as "nothing yet", not as a
+       stripe across the top of every page. */
+    background: transparent;
+  }
+
+  .reading-progress__bar {
+    display: block;
+    height: 100%;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    background: var(--accent);
+    /* Short transition smooths the per-frame jitter without lagging behind the
+       scroll. The global prefers-reduced-motion block flattens it to ~0. */
+    transition: transform 80ms linear;
+  }
+</style>
+
+<script is:inline data-progress-target={target}>
+  (() => {
+    // Captured now: currentScript is only non-null during synchronous execution.
+    const selector = document.currentScript.dataset.progressTarget || 'article';
+    let article, bar, ticking = false;
+
+    const update = () => {
+      ticking = false;
+      // Document-space offset of the article top. Recomputed each frame so it
+      // stays correct after images load or the layout reflows.
+      const start = window.scrollY + article.getBoundingClientRect().top;
+      // 100% is reached when the article's bottom edge meets the viewport
+      // bottom — i.e. the last line of prose is on screen.
+      const max = article.offsetHeight - window.innerHeight;
+      let p;
+      if (max <= 0) {
+        // Article shorter than the viewport: it's entirely readable already.
+        p = window.scrollY >= start ? 1 : 0;
+      } else {
+        p = (window.scrollY - start) / max;
+      }
+      p = Math.min(1, Math.max(0, p));
+      bar.style.transform = 'scaleX(' + p + ')';
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    // Wait for the full document: this component may be rendered above the
+    // article it measures, so the target might not be parsed yet.
+    const init = () => {
+      article = document.querySelector(selector);
+      bar = document.querySelector('[data-progress-bar]');
+      if (!article || !bar) return;
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      update();
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

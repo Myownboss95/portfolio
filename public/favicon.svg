@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="28" fill="#0b0f14"/>
-  <text x="50%" y="52%" dominant-baseline="central" text-anchor="middle"
-        font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="74"
-        font-weight="700" fill="#e6edf3" letter-spacing="-2">D</text>
-  <circle cx="96" cy="92" r="9" fill="#2dd4bf"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Daniel Odiachi">
+  <!-- Solid dark tile: keeps the mark visible on light AND dark browser chrome. -->
+  <rect width="32" height="32" rx="7" fill="#0b0f14"/>
+  <!-- Lowercase "d": bowl (ring) + stem, in the brand accent teal. -->
+  <path fill="#2dd4bf" fill-rule="evenodd" d="M14 11a7.5 7.5 0 1 0 0 15 7.5 7.5 0 1 0 0-15Zm0 4a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7Z"/>
+  <rect x="20" y="5" width="4" height="21" rx="2" fill="#2dd4bf"/>
 </svg>

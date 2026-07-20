@@ -1,0 +1,80 @@
+---
+title: "Internal MCP Server for LLM Agents"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2025 — Present"
+summary: "A custom Model Context Protocol server exposing Hizo's internal tools and connectors to LLM agents — one audited, permissioned contract for how agents call company systems, instead of a new bespoke integration per assistant."
+stack: ["TypeScript", "Node.js", "MCP", "Anthropic Claude", "OpenAI", "REST"]
+domain: ["AI", "MCP", "Agents"]
+featured: true
+order: 3
+sourcePrivate: true
+---
+
+## The problem
+
+Once the first LLM feature shipped, the second and third were requested immediately — and each one wanted access to the same underlying systems: transaction lookup, KYC status, card state, provider records.
+
+The default path is to hand-roll tool definitions inside each assistant. Three assistants later you have three slightly different definitions of "look up a transaction," three places where auth is handled differently, three places to audit, and three places to fix when an internal API changes. The integration layer becomes the bottleneck, and worse, the security surface becomes impossible to reason about — nobody can answer "what can our agents actually do?" without reading three codebases.
+
+## Constraints
+
+- **These are financial systems.** An agent with an unbounded tool is an incident waiting to happen. Every capability needed explicit scoping.
+- **Multi-consumer.** Support assistants, internal ops tooling, and developer workflows all needed the same tools, without copy-paste.
+- **Auditability.** Every agent-initiated action had to be attributable and reviewable after the fact.
+- **Internal APIs keep moving.** The contract exposed to agents had to be stable even when the service behind it wasn't.
+- **Model-agnostic.** It could not be built against one vendor's function-calling dialect.
+
+## What I built
+
+A **Model Context Protocol server** — one standardised surface that any MCP-capable agent can connect to, with the company's internal systems behind it.
+
+```text
+   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   │  Support     │   │  Internal    │   │  Dev / ops   │
+   │  assistant   │   │  ops agent   │   │  workflows   │
+   └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+          │                  │                  │
+          └──────────────────┼──────────────────┘
+                             │  MCP (one protocol)
+                             ▼
+              ┌───────────────────────────────┐
+              │      Internal MCP server      │
+              │                               │
+              │  • tool registry + schemas    │
+              │  • scoped permissions         │
+              │  • auth / identity            │
+              │  • audit log (every call)     │
+              │  • read vs. write separation  │
+              └───────────────┬───────────────┘
+                              │  adapters
+        ┌──────────┬──────────┼──────────┬──────────┐
+        ▼          ▼          ▼          ▼          ▼
+    Transactions  KYC       Cards     Providers   Docs
+     (internal)  (Prova)  (Interlace)  (webhooks) (knowledge)
+```
+
+- **A tool registry with explicit, typed schemas** — each tool declares exactly what it accepts and returns, so the agent's view of the system is a contract rather than a prose description.
+- **Read/write separation enforced at the protocol boundary.** Read tools are broadly available; anything that mutates state is a separate, narrowly-scoped class of tool with its own approval path.
+- **Permission scoping per consumer.** A customer-facing assistant and an internal ops agent connect to the same server and see different tool sets.
+- **Audit logging on every invocation** — which agent, which tool, which arguments, what came back.
+- **Adapters over internal services**, so an internal API refactor changes the adapter, not the contract every agent depends on.
+
+## The decision that mattered
+
+**Treating agent access as a platform concern, not a feature of each assistant.**
+
+The tempting move was to add tools directly to the support assistant that needed them — faster to ship, and for exactly one assistant it would have been the right call. I built the server instead, because the trajectory was obvious: more agents were coming, and the cost of consolidating three divergent integration layers later is far higher than the cost of building one now.
+
+Choosing **MCP specifically**, rather than an in-house tool protocol, was the other half of that call. It meant not owning a protocol design, not maintaining a bespoke adapter per model vendor, and being able to point any MCP-capable client — including developer tooling — at the same server on day one.
+
+The security framing followed naturally. When there's exactly one door into internal systems, you can put a real lock on it, log everything that passes through, and answer "what can our agents do?" by reading one registry.
+
+## Impact
+
+- **One standardised, audited contract** for how LLM agents call company systems, replacing per-assistant integration code.
+- New agent capabilities became a matter of registering a tool rather than building an integration layer.
+- Every agent-initiated action is attributable and reviewable — a prerequisite for putting agents anywhere near regulated financial workflows.
+- Internal API changes stopped propagating into agent code.
+
+_Source code is private (production fintech). Architecture and decisions summarized here — happy to walk through the tool registry and permission model in an interview._

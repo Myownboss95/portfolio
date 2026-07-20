@@ -13,12 +13,13 @@ no login — it's all files in this repo.
 | I want to…                          | Edit this                                    |
 | :---------------------------------- | :------------------------------------------- |
 | Add a **case study**                | new `.mdx` in `src/content/projects/`        |
+| Write a **blog post**               | new `.mdx` in `src/content/blog/`            |
 | Add a **Web / WordPress site**      | `src/data/sites.ts`                          |
 | Change my **name, email, socials**  | `src/consts.ts`                              |
 | Turn on the **contact form**        | `src/pages/contact.astro` (Web3Forms key)    |
 | Edit the **About / Contact** copy   | `src/pages/about.astro`, `contact.astro`     |
 | Edit the **homepage** copy          | `src/pages/index.astro`                      |
-| Swap the **résumé PDF**             | replace `public/Daniel-Odiachi-Resume.pdf`   |
+| Swap the **CV / résumé PDF**        | replace `public/Daniel-Odiachi-CV.pdf`       |
 | Add an **image**                    | drop it in `public/` (see [Images](#images)) |
 
 After any edit, the publish flow is always the same:
@@ -80,7 +81,57 @@ Use fenced ` ``` ` code blocks for architecture diagrams.
 
 ---
 
-## 2. Add a Web / WordPress site (a simple link card)
+## 2. Write a blog post
+
+Posts are MDX files in `src/content/blog/`. **The filename becomes the URL** —
+`my-post.mdx` lives at `/blog/my-post`. They appear on `/blog` newest-first and in
+the RSS feed at `/rss.xml`.
+
+### Steps
+
+```sh
+# 1. Copy the template (the _ prefix means the template itself never publishes)
+cp src/content/blog/_template.mdx src/content/blog/my-post.mdx
+
+# 2. Edit the new file (frontmatter + body) — see fields below
+# 3. Preview it: npm run dev → http://localhost:4321/blog
+# 4. Set draft: false, then ship it
+git add -A && git commit -m "Add my-post" && git push
+```
+
+### Frontmatter fields
+
+Same deal as case studies — types are enforced at build time
+(`src/content.config.ts`), so a typo fails the build instead of publishing broken.
+
+| Field         | Required | What it does                                             |
+| :------------ | :------- | :------------------------------------------------------- |
+| `title`       | yes      | Post title                                                |
+| `description` | yes      | One–two sentences, shown on `/blog`, in RSS, and for SEO  |
+| `pubDate`     | yes      | `YYYY-MM-DD` — sorts the list, newest first               |
+| `updatedDate` | no       | `YYYY-MM-DD` — shown next to the date if you revise a post |
+| `tags`        | no       | Topic tags, e.g. `["RAG", "LLM"]`                         |
+| `draft`       | no       | `true` → visible in `npm run dev` only, never in production |
+| `cover`       | no       | Path to an image, e.g. `/covers/my-post.png`              |
+
+> **Drafts are safe.** A post with `draft: true` renders locally so you can read it
+> in place, but is excluded from the production build, the sitemap, and RSS. Flip it
+> to `false` when you're ready to publish.
+
+### Body
+
+Plain Markdown below the frontmatter, styled with the same typography as the case
+studies (`.prose-case`). Use `##` for sections, `###` for detail inside a section,
+and fenced ` ``` ` code blocks for code or diagrams.
+
+### RSS
+
+`/rss.xml` is generated automatically from this collection — nothing to maintain.
+The feed title and description come from `SITE` in `src/consts.ts`.
+
+---
+
+## 3. Add a Web / WordPress site (a simple link card)
 
 Lighter work — WordPress, marketing sites, anything that doesn't need a full
 case study — lives as a one-entry list in **`src/data/sites.ts`**. These render in
@@ -116,7 +167,7 @@ git add -A && git commit -m "Add Client Site" && git push
 
 ---
 
-## 3. Change your details (name, contact, socials, nav)
+## 4. Change your details (name, contact, socials, nav)
 
 All in **`src/consts.ts`**:
 
@@ -128,7 +179,7 @@ Edit the values, commit, push.
 
 ---
 
-## 4. Edit page copy
+## 5. Edit page copy
 
 Each page is one file in `src/pages/`:
 
@@ -136,6 +187,7 @@ Each page is one file in `src/pages/`:
 | :---------- | :---------------------------- |
 | Homepage    | `src/pages/index.astro`       |
 | Work        | `src/pages/work/index.astro`  |
+| Blog        | `src/pages/blog/index.astro`  |
 | About       | `src/pages/about.astro`       |
 | Contact     | `src/pages/contact.astro`     |
 | 404         | `src/pages/404.astro`         |
@@ -145,7 +197,7 @@ edit them. `npm run dev` to preview.
 
 ---
 
-## 5. The contact form (Web3Forms)
+## 6. The contact form (Web3Forms)
 
 The form on `/contact` uses **[Web3Forms](https://web3forms.com)** — a free service
 that emails you each submission, no backend or server needed.
@@ -177,7 +229,7 @@ that emails you each submission, no backend or server needed.
 
 ---
 
-## 6. Images {#images}
+## 7. Images {#images}
 
 Anything in `public/` is served from the site root. Drop a file in and reference
 it with a leading slash:
@@ -190,7 +242,7 @@ committing so the page stays fast.
 
 ---
 
-## 7. Local development
+## 8. Local development
 
 ```sh
 npm install       # first time only
@@ -204,7 +256,7 @@ you, it'll build on Cloudflare.
 
 ---
 
-## 8. Safety net & troubleshooting
+## 9. Safety net & troubleshooting
 
 - **Build fails after an edit?** Read the error — it usually names the file and
   field. The most common cause is a case-study frontmatter typo or a missing
@@ -222,13 +274,16 @@ you, it'll build on Cloudflare.
 ```text
 src/
 ├── consts.ts                 # name, contact, socials, nav — your details
-├── content.config.ts         # case-study schema (the "CMS" contract)
+├── content.config.ts         # case-study + blog schemas (the "CMS" contract)
 ├── content/projects/         # case studies (one .mdx per project)  ← add here
 │   └── _template.mdx          # copy this to start a new case study
+├── content/blog/             # blog posts (one .mdx per post)  ← add here
+│   └── _template.mdx          # copy this to start a new post
 ├── data/sites.ts             # Web / WordPress site list  ← add here
 ├── components/               # Header, Footer, cards, SEO head, theme toggle
 ├── layouts/BaseLayout.astro  # page shell
-├── pages/                    # routes (index, work, about, contact, 404)
+├── pages/                    # routes (index, work, blog, about, contact, 404)
+├── pages/rss.xml.ts          # RSS feed, generated from the blog collection
 └── styles/global.css         # design tokens + theme
 public/                       # static files (résumé PDF, favicon, images)
 ```

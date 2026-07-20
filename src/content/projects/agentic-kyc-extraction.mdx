@@ -1,0 +1,92 @@
+---
+title: "Agentic Workflows & LLM Document Extraction"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2024 — Present"
+summary: "LLM-assisted extraction turning unstructured identity documents into structured, validated fields for the Prova KYC pipeline — plus agentic tool-use workflows that execute multi-step KYC, transaction, and support tasks with a human in the loop."
+stack: ["TypeScript", "Node.js", "Laravel", "Anthropic Claude", "OpenAI", "PostgreSQL"]
+domain: ["AI", "Agents", "KYC"]
+featured: true
+order: 5
+sourcePrivate: true
+---
+
+## The problem
+
+Two problems that turned out to be the same problem.
+
+**Documents.** KYC runs on unstructured input — ID cards, utility bills, bank statements, in wildly varying layouts across every market Hizo operated in. Traditional OCR reads the characters and stops; someone still has to decide which string is the name, which is the ID number, and whether the date format is DD/MM or MM/DD. That someone was an ops agent, and the queue grew with the user base.
+
+**Multi-step operations.** The routine work behind support — check a user's tier, look up a transaction, verify against the provider, resolve a mismatch — was a fixed sequence of API calls that a human executed by hand, slowly, dozens of times a day.
+
+Both were bounded, well-understood, repetitive tasks blocked on a human doing mechanical work. Both were also tasks where being wrong has consequences: a mis-extracted ID number is a failed verification or, worse, a passed one that shouldn't have been.
+
+## Constraints
+
+- **Wrong is expensive.** Extraction feeding a compliance pipeline cannot quietly produce plausible-looking garbage.
+- **Format chaos.** Document layouts varied by country, by issuer, and by decade.
+- **Agents taking actions, not just answering.** Tool-use against live internal APIs means a mistake mutates real state.
+- **Regulatory reviewability.** Every automated decision touching KYC had to be reconstructable afterwards.
+- **The model is one input, not the authority.** Existing validation rules stayed in force.
+
+## What I built
+
+**LLM-assisted extraction** feeding the existing [Prova](/work/kyc-tier-system) verification pipeline, and **agentic workflows** that execute multi-step internal tasks through tool-use — both sharing the same principle: the model proposes, deterministic code disposes.
+
+```text
+  Unstructured document
+          │
+          ▼
+  ┌────────────────────┐
+  │  LLM extraction    │   → structured candidate fields
+  │  (typed schema)    │      + per-field confidence
+  └─────────┬──────────┘
+            │
+            ▼
+  ┌────────────────────┐   fails →  ┌──────────────────┐
+  │  Deterministic     │ ─────────▶ │  Human review    │
+  │  validation        │            │  queue           │
+  │  (format, checksum,│            └────────┬─────────┘
+  │   cross-field)     │                     │
+  └─────────┬──────────┘                     │
+            │ passes                         │ approves
+            ▼                                ▼
+        ┌─────────────────────────────────────────┐
+        │   Prova KYC pipeline (tier state)       │
+        └─────────────────────────────────────────┘
+
+
+  Agentic workflow (multi-step tasks)
+  ───────────────────────────────────
+   Task → plan → tool calls (via MCP) → results → next step
+                       │
+                       └── write / state-changing step
+                                   │
+                                   ▼
+                        human approval required
+```
+
+- **Extraction against a typed schema** rather than free-form parsing — the model fills a defined structure, so the output is either schema-valid or rejected, never "mostly right."
+- **Deterministic validation after the model.** Format checks, checksums, and cross-field consistency run on every extracted field. The LLM removes the reading work; it does not get the final say.
+- **Confidence-driven routing.** High-confidence, validation-passing extractions flow through; anything ambiguous lands in a human review queue with the source document beside the proposal.
+- **Agentic tool-use** across internal APIs — the agent decomposes a task into tool calls and executes them, routed through the [internal MCP server](/work/mcp-tool-server) so every action is scoped and audited.
+- **Human-in-the-loop on state changes.** Reads run autonomously; anything that mutates KYC state, transactions, or user records requires explicit approval.
+
+## The decision that mattered
+
+**Putting the human in the loop by design, and drawing the line at reads versus writes.**
+
+The straightforward version of this is full automation with a confidence threshold — let the agent act when it's sure enough. I deliberately didn't build that. The line isn't "how confident is the model," it's "does this change state." Reads are reversible and cheap to be wrong about. Writes, in a KYC pipeline, are neither.
+
+That constraint made the whole thing shippable. Ops didn't have to trust the model to adopt it — they kept final authority and simply stopped doing the mechanical part. Adoption was immediate precisely because nobody was being asked to take a leap of faith.
+
+The other call was **refusing to let the LLM be the validator**. It's tempting: the model can check a checksum, and it usually will. But "usually" isn't a property you can build compliance on. Extraction is a perception problem, where LLMs are genuinely excellent. Validation is a rules problem, where deterministic code is correct 100% of the time. Using each for what it's actually good at is most of the design.
+
+## Impact
+
+- Identity documents converted into **structured, validated fields automatically**, with ops attention redirected from transcription to genuine edge cases.
+- Multi-step KYC, transaction, and support tasks executed by agents through audited tool calls, with humans retaining approval on every state change.
+- Every automated decision reconstructable after the fact — extraction proposal, validation result, and human action all recorded.
+- Feeds directly into the existing Prova verification pipeline rather than sitting beside it as a separate tool.
+
+_Source code is private (production fintech). Architecture and decisions summarized here — happy to walk through the extraction schema and review-queue design in an interview._

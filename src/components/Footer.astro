@@ -1,5 +1,6 @@
 ---
 import { SITE, SOCIALS } from '../consts';
+import SocialIcon from './SocialIcon.astro';
 const year = 2026; // build-time constant; bump if needed
 ---
 
@@ -9,22 +10,59 @@ const year = 2026; // build-time constant; bump if needed
       <p class="font-mono text-sm text-main">{SITE.name}</p>
       <p class="text-sm text-faint">{SITE.tagline}</p>
     </div>
-    <div class="flex flex-wrap gap-x-5 gap-y-2">
+    <!-- Icon-only row: the visible label is gone, so each link carries an
+         aria-label and the glyph itself is aria-hidden. -->
+    <ul class="flex flex-wrap items-center gap-2" role="list">
       {
-        SOCIALS.map((s) => (
-          <a
-            href={s.href}
-            class="text-sm text-muted transition hover:text-accent"
-            rel="noopener noreferrer"
-            target={s.href.startsWith('http') ? '_blank' : undefined}
-          >
-            {s.label}
-          </a>
-        ))
+        SOCIALS.map((s) => {
+          const external = s.href.startsWith('http');
+          return (
+            <li>
+              <a
+                href={s.href}
+                class="social-tile flex h-10 w-10 items-center justify-center rounded-lg border border-app bg-card text-muted"
+                aria-label={s.label}
+                title={s.label}
+                rel={external ? 'noopener noreferrer' : undefined}
+                target={external ? '_blank' : undefined}
+              >
+                <SocialIcon label={s.label} size={18} />
+              </a>
+            </li>
+          );
+        })
       }
-    </div>
+    </ul>
   </div>
   <div class="mx-auto max-w-5xl px-5 pb-8">
     <p class="text-xs text-faint">© {year} {SITE.name}</p>
   </div>
 </footer>
+
+<style>
+  .social-tile {
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+  .social-tile:hover {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+    transform: translateY(-2px);
+  }
+  .social-tile:focus-visible {
+    color: var(--accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .social-tile {
+      transition: none;
+    }
+    .social-tile:hover {
+      transform: none;
+    }
+  }
+</style>

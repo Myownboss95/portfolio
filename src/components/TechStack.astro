@@ -1,0 +1,344 @@
+---
+import { STACK, STACK_CATEGORIES, categorySlug } from '../data/stack';
+import { TECH_ICONS } from '../data/tech-icons';
+
+// "All" first, then the CV categories in their authored order (AI leads).
+const filters = ['All', ...STACK_CATEGORIES] as const;
+
+// Fail the build rather than ship a tile with an empty chip: the icon map is
+// keyed by name, so a rename in stack.ts must be mirrored in tech-icons.ts.
+const missing = STACK.filter((tech) => !TECH_ICONS[tech.name]).map((tech) => tech.name);
+if (missing.length > 0) {
+  throw new Error(`tech-icons.ts is missing an icon for: ${missing.join(', ')}`);
+}
+---
+
+<section class="mx-auto max-w-5xl px-5 py-16" aria-labelledby="tech-stack-heading">
+  <h2 id="tech-stack-heading" class="text-2xl font-bold tracking-tight text-main">Tech stack</h2>
+  <p class="mt-2 max-w-2xl text-muted">
+    The tools I actually reach for in production. Filter by what you care about.
+  </p>
+
+  <!--
+    Real buttons with aria-pressed rather than a tablist: the grid below is not a
+    tab panel, it is one list that gets filtered, so "toggle" semantics are honest.
+  -->
+  <div
+    class="mt-6 flex flex-wrap gap-2"
+    data-stack-filters
+    role="group"
+    aria-label="Filter technologies by category"
+  >
+    {
+      filters.map((label) => (
+        <button
+          type="button"
+          class="stack-filter font-mono text-xs"
+          data-filter={categorySlug(label)}
+          aria-pressed={label === 'All' ? 'true' : 'false'}
+        >
+          {label}
+        </button>
+      ))
+    }
+  </div>
+
+  <!--
+    Explains the `growing` badge. Rendered visible by default so the no-JS view
+    (every tile shown, badges included) is never left with an unexplained label;
+    the filter script hides it only when the active view contains no badge.
+  -->
+  <p class="mt-3 font-mono text-xs text-faint" data-stack-legend>
+    growing — shipped with it, still deepening
+  </p>
+
+  <ul
+    role="list"
+    class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+    data-stack-grid
+  >
+    {
+      STACK.map((tech) => {
+        const icon = TECH_ICONS[tech.name];
+        // Brand marks bring their own hue (two values, one per theme); the
+        // hand-drawn concept glyphs bring none and inherit the category hue.
+        const brandVars = icon.dark
+          ? `--brand-dark:${icon.dark};--brand-light:${icon.light ?? icon.dark}`
+          : undefined;
+        return (
+        <li
+          class="tech-tile"
+          data-category={categorySlug(tech.category)}
+          data-cat-color={categorySlug(tech.category)}
+          style={brandVars}
+        >
+          {/* Decorative: the tech name right next to it is the real label. */}
+          <span class="tech-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false" set:html={icon.body} />
+          </span>
+          <span class="min-w-0">
+            <span class="tech-name">{tech.name}</span>
+            <span class="tech-meta">
+              <span class="tech-cat">{tech.category}</span>
+              {tech.level === 'growing' && (
+                <span class="tech-level font-mono">
+                  {/* Visible label is decorative for AT; the sr-only text carries
+                      the full meaning so the badge never depends on colour or
+                      placement to be understood. */}
+                  <span aria-hidden="true">growing</span>
+                  <span class="sr-only">
+                    — growing proficiency: shipped with it, still deepening
+                  </span>
+                </span>
+              )}
+            </span>
+          </span>
+        </li>
+        );
+      })
+    }
+  </ul>
+
+  <!-- Announced only to AT; the visual result is obvious from the grid itself. -->
+  <p class="sr-only" role="status" aria-live="polite" data-stack-status></p>
+</section>
+
+<style>
+  /* --------------------------------------------------------------------------
+     One hue per category. Dark values first; `html.light` swaps to darker,
+     higher-contrast versions so the monogram chips stay legible on white.
+  -------------------------------------------------------------------------- */
+  .tech-tile[data-cat-color='ai-llm'] { --cat: #2dd4bf; }
+  .tech-tile[data-cat-color='backend'] { --cat: #818cf8; }
+  .tech-tile[data-cat-color='frontend'] { --cat: #38bdf8; }
+  .tech-tile[data-cat-color='data'] { --cat: #f472b6; }
+  .tech-tile[data-cat-color='infra'] { --cat: #fbbf24; }
+  .tech-tile[data-cat-color='security'] { --cat: #c084fc; }
+  .tech-tile[data-cat-color='mobile'] { --cat: #4ade80; }
+
+  :global(html.light) .tech-tile[data-cat-color='ai-llm'] { --cat: #0d9488; }
+  :global(html.light) .tech-tile[data-cat-color='backend'] { --cat: #4f46e5; }
+  :global(html.light) .tech-tile[data-cat-color='frontend'] { --cat: #0284c7; }
+  :global(html.light) .tech-tile[data-cat-color='data'] { --cat: #db2777; }
+  :global(html.light) .tech-tile[data-cat-color='infra'] { --cat: #b45309; }
+  :global(html.light) .tech-tile[data-cat-color='security'] { --cat: #7c3aed; }
+  :global(html.light) .tech-tile[data-cat-color='mobile'] { --cat: #15803d; }
+
+  /* Filter pills. Styled here (not with utilities) so the pressed state is a
+     single source of truth driven by aria-pressed — no class/state drift. */
+  .stack-filter {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+  }
+  .stack-filter:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .stack-filter[aria-pressed='true'] {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .tech-tile {
+    /* Brand hue, resolved per theme. Tiles whose icon is a hand-drawn concept
+       glyph set neither var, so both fall through to the category hue. */
+    --brand: var(--brand-dark, var(--cat));
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    border-radius: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      box-shadow 0.22s ease;
+  }
+  :global(html.light) .tech-tile {
+    --brand: var(--brand-light, var(--cat));
+  }
+  /* Beats the flex display above, which would otherwise defeat [hidden]. */
+  .tech-tile[hidden] {
+    display: none;
+  }
+  /* Transient state while a tile animates out, before it is removed from flow. */
+  .tech-tile.is-out {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  .tech-tile:hover {
+    border-color: color-mix(in srgb, var(--cat) 55%, var(--border));
+    background: color-mix(in srgb, var(--cat) 7%, var(--bg-card));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--cat) 70%, transparent);
+  }
+
+  /* The chip stays keyed to the CATEGORY hue so the grid still reads as five
+     groups; only the logo inside it carries the brand colour. That is what
+     keeps ~30 vendor palettes from turning into a bag of skittles. */
+  .tech-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.55rem;
+    background: color-mix(in srgb, var(--cat) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cat) 24%, transparent);
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .tech-icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--brand);
+    /* At rest the logo is desaturated and dimmed so the grid stays calm;
+       hover restores it to full brand colour. */
+    filter: saturate(0.5);
+    opacity: 0.78;
+    transition:
+      filter 0.22s ease,
+      opacity 0.22s ease;
+  }
+  .tech-tile:hover .tech-icon {
+    background: color-mix(in srgb, var(--cat) 20%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cat) 38%, transparent);
+  }
+  .tech-tile:hover .tech-icon svg {
+    filter: none;
+    opacity: 1;
+  }
+
+  .tech-name {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Category + optional level badge share one row so the badge never widens the
+     tile — on the narrowest (2-col) breakpoint the category truncates first. */
+  .tech-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+    min-width: 0;
+  }
+  .tech-cat {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Deliberately neutral: border + soft fill from the theme tokens, no hue of
+     its own. It should read as a considered label, not a warning. Both themes
+     get it for free because every value here is a semantic var. */
+  .tech-level {
+    flex: none;
+    font-size: 0.5625rem;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--text-faint);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.15rem 0.35rem;
+    white-space: nowrap;
+  }
+  /* bg-soft equals bg-card in light mode, so lean on the border for separation. */
+  :global(html.light) .tech-level {
+    background: var(--bg-soft);
+    border-color: color-mix(in srgb, var(--text-faint) 30%, var(--border));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tech-tile,
+    .tech-icon,
+    .tech-icon svg {
+      transition: none;
+    }
+    /* Colour still resolves on hover; only the movement is dropped. */
+    .tech-tile:hover,
+    .tech-tile.is-out {
+      transform: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const filterBar = document.querySelector('[data-stack-filters]');
+    const grid = document.querySelector('[data-stack-grid]');
+    const status = document.querySelector('[data-stack-status]');
+    const legend = document.querySelector('[data-stack-legend]');
+    if (!filterBar || !grid) return;
+
+    const tiles = Array.from(grid.querySelectorAll('.tech-tile'));
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Must outlast the 0.22s CSS transition so tiles finish fading before they
+    // leave the flow (and the grid reflows only once).
+    const EXIT_MS = reduced ? 0 : 240;
+    let pending = null;
+
+    function apply(active) {
+      const keep = (tile) => active === 'all' || tile.dataset.category === active;
+
+      // Tiles coming back: put them in flow first, then release .is-out on the
+      // next frame so the browser has a start value to transition from.
+      const entering = tiles.filter((t) => keep(t) && t.hidden);
+      entering.forEach((t) => {
+        t.hidden = false;
+        t.classList.add('is-out');
+      });
+      requestAnimationFrame(() => entering.forEach((t) => t.classList.remove('is-out')));
+
+      const leaving = tiles.filter((t) => !keep(t) && !t.hidden);
+      leaving.forEach((t) => t.classList.add('is-out'));
+      clearTimeout(pending);
+      pending = setTimeout(() => {
+        leaving.forEach((t) => {
+          if (t.classList.contains('is-out')) t.hidden = true;
+        });
+      }, EXIT_MS);
+
+      // Only explain the badge when the current view actually shows one,
+      // otherwise the legend dangles under an unrelated category.
+      if (legend) {
+        legend.hidden = !tiles.some((t) => keep(t) && t.querySelector('.tech-level'));
+      }
+
+      const count = tiles.filter(keep).length;
+      if (status) {
+        status.textContent = `Showing ${count} ${count === 1 ? 'technology' : 'technologies'}`;
+      }
+    }
+
+    filterBar.addEventListener('click', (event) => {
+      const button = event.target.closest('.stack-filter');
+      if (!button) return;
+      filterBar.querySelectorAll('.stack-filter').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b === button));
+      });
+      apply(button.dataset.filter);
+    });
+  })();
+</script>

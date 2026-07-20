@@ -1,0 +1,83 @@
+---
+title: "RAG Support & Operations Assistant"
+role: "Technical Lead / CTO"
+company: "Hizo Africa"
+period: "2024 — Present"
+summary: "A production LLM assistant grounded in Hizo's internal documentation and knowledge base — hybrid vector + keyword retrieval, multi-provider (Claude and OpenAI), built so that an answer it can't ground is an answer it doesn't give."
+stack: ["TypeScript", "Node.js", "PostgreSQL / pgvector", "Anthropic Claude", "OpenAI", "Redis"]
+domain: ["AI", "RAG"]
+featured: true
+order: 1
+sourcePrivate: true
+---
+
+## The problem
+
+Support in a neobank is mostly the same fifty questions asked in a thousand different ways — *why is my card declined, where is my transfer, what tier do I need for this, why did my KYC fail.* The answers already existed, scattered across internal runbooks, policy docs, and provider documentation. Finding them was the bottleneck: agents dug through documents while customers waited, and the newest agents — the ones asking the most questions — were the slowest to find answers.
+
+A general-purpose chatbot was the obvious idea and the wrong one. In a regulated financial product, an assistant that invents a plausible-sounding policy is worse than no assistant at all. A confidently wrong answer about KYC requirements or fees is a compliance problem, not a UX problem.
+
+## Constraints
+
+- **Grounding was non-negotiable** — every answer had to trace back to a retrieved internal source, or the assistant had to decline.
+- **Two very different audiences** — internal agents needed operational depth; customers needed a narrower, safer surface over the same corpus.
+- **Living corpus** — policies, fees, and provider behaviour changed constantly. A stale index is a wrong answer with a timestamp.
+- **No vendor lock-in** — model pricing and capability were moving monthly; committing the whole product to one provider was a business risk.
+- **Cost and latency** — support volume is bursty, and nobody waits eight seconds for a chat reply.
+
+## What I built
+
+A retrieval-augmented pipeline where the model's job is deliberately small: read what retrieval found, answer only from that, cite it.
+
+```text
+  Question
+     │
+     ▼
+  ┌─────────────────────────────────────────────┐
+  │  Retrieval (hybrid)                         │
+  │                                             │
+  │   vector search ──┐                         │
+  │   (pgvector,      ├──▶ merge + re-rank      │
+  │    embeddings)    │      → top-k chunks     │
+  │   keyword search ─┘                         │
+  └────────────────────┬────────────────────────┘
+                       │  grounded context
+                       ▼
+  ┌─────────────────────────────────────────────┐
+  │  Provider abstraction (Claude ⇄ OpenAI)     │
+  │  answer strictly from context, else decline │
+  └────────────────────┬────────────────────────┘
+                       │
+                       ▼
+              Answer + source citations
+                       │
+          ┌────────────┴────────────┐
+          ▼                         ▼
+   Internal agent view      Customer-facing flow
+   (full corpus)            (restricted corpus)
+```
+
+- **Hybrid retrieval.** Vector search over embeddings in PostgreSQL/pgvector, run alongside keyword search, with results merged and re-ranked. Semantic search alone kept missing the things fintech users actually type — error codes, provider names, exact fee labels. Those are lexical matches, and embeddings blur them.
+- **Chunking that respects document structure** rather than fixed character windows, so a retrieved chunk carries enough surrounding context to be a real answer instead of a fragment.
+- **A provider abstraction layer** over Anthropic Claude and OpenAI, so switching models — or routing different call types to different models — is configuration, not a refactor.
+- **Corpus scoping per audience.** The same pipeline serves internal and customer flows; what differs is which slice of the corpus retrieval is allowed to see. One system, two blast radii.
+- **Citations surfaced in the response**, so an agent can verify the source in one click rather than trusting the model.
+
+## The decision that mattered
+
+**Making "I don't know" a first-class, well-engineered output.**
+
+The instinct with a support bot is to maximise the number of questions it answers. I optimised for the opposite: when retrieval returns nothing confidently relevant, the assistant says so and routes to a human, rather than generating something fluent from the model's own weights.
+
+That single rule is what made it deployable in a regulated product. It cost coverage — the assistant declines more than a general chatbot would — and bought trust. An assistant that is *sometimes* silent gets used. An assistant that is *sometimes* wrong, in a way nobody can predict, gets switched off after the first incident.
+
+The second-order effect turned out to be more valuable than the assistant itself: every decline is a signal that documentation is missing. The gaps became a work queue.
+
+## Impact
+
+- A grounded support and operations assistant running in production across both **customer-facing and internal support flows**.
+- Materially reduced hallucination risk versus an ungrounded model, because answers are constrained to retrieved internal sources and cite them.
+- Faster resolution for the questions that dominate support volume, with the hard cases still reaching a human.
+- The provider abstraction made model changes routine rather than migrations.
+
+_Source code is private (production fintech). Architecture and decisions summarized here — happy to walk through the retrieval and evaluation detail in an interview._

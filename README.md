@@ -72,6 +72,29 @@ Cloudflare rebuilds and it's live in ~90 seconds.
 
 ---
 
+## 📝 How to write a blog post
+
+Same machinery as case studies, different folder. Posts are MDX files in
+**`src/content/blog/`** — the **filename becomes the URL** (`my-post.mdx` →
+`/blog/my-post`), they list newest-first on `/blog`, and `/rss.xml` is generated
+from them automatically.
+
+```sh
+cp src/content/blog/_template.mdx src/content/blog/my-post.mdx
+npm run dev        # preview at localhost:4321/blog
+```
+
+Frontmatter: `title`, `description`, `pubDate` (all required), plus optional
+`updatedDate`, `tags`, `draft`, and `cover` — every field is documented inside
+`_template.mdx`.
+
+> 🚧 **`draft: true`** shows the post in `npm run dev` but keeps it out of the
+> production build, the sitemap, and RSS. Flip it to `false` to publish.
+
+Full field table and workflow: [docs/updating-the-site.md](docs/updating-the-site.md#2-write-a-blog-post).
+
+---
+
 ## 🌐 How to add a Web / WordPress site
 
 Lighter web work (WordPress, marketing sites) lives in a simple list, not a full
@@ -96,13 +119,16 @@ Then `git add -A && git commit -m "Add Client Site" && git push`.
 ```text
 src/
 ├── consts.ts                 # name, contact, socials, nav — edit your details here
-├── content.config.ts         # case study schema (the "CMS" contract)
+├── content.config.ts         # case study + blog schemas (the "CMS" contract)
 ├── content/projects/         # case studies (one .mdx per project) ← add here
 │   └── _template.mdx          # copy this to add a project
+├── content/blog/             # blog posts (one .mdx per post) ← add here
+│   └── _template.mdx          # copy this to add a post
 ├── data/sites.ts             # Web/WordPress site list ← add here
 ├── components/               # Header, Footer, cards, SEO head, theme toggle
 ├── layouts/BaseLayout.astro  # page shell
-├── pages/                    # routes (index, work, about, contact, 404)
+├── pages/                    # routes (index, work, blog, about, contact, 404)
+├── pages/rss.xml.ts          # RSS feed, generated from the blog collection
 └── styles/global.css         # design tokens + theme
 public/                       # static files (résumé PDF, favicon, images)
 ```

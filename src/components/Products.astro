@@ -1,0 +1,59 @@
+---
+import ProductCard from './ProductCard.astro';
+import { PRODUCTS, type Product } from '../data/products';
+
+interface Props {
+  /** Small mono label above the heading. */
+  eyebrow?: string;
+  /** Section heading. */
+  heading?: string;
+  /** One-line supporting sentence under the heading. */
+  subtitle?: string;
+  /** Override the products shown (defaults to every product in data/products). */
+  products?: Product[];
+  /** Extra classes on the <section> — e.g. to drop the top padding on a page. */
+  class?: string;
+  /** Heading level, so the section can sit under an <h1> or an existing <h2>. */
+  headingLevel?: 'h2' | 'h3';
+  /** Anchor id for in-page navigation. */
+  id?: string;
+}
+
+const {
+  eyebrow = 'Products',
+  heading = 'Things I built that you can use today',
+  subtitle = 'Live products in production — not demos.',
+  products = PRODUCTS,
+  class: className = '',
+  headingLevel = 'h2',
+  id = 'products',
+} = Astro.props;
+
+const Heading = headingLevel;
+---
+
+{
+  products.length > 0 && (
+    <section id={id} class:list={['mx-auto max-w-5xl px-5 py-16', className]}>
+      <p class="reveal font-mono text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+        {eyebrow}
+      </p>
+
+      <Heading class="reveal mt-3 text-2xl font-bold tracking-tight text-main" style="--i:1">
+        {heading}
+      </Heading>
+
+      {subtitle && (
+        <p class="reveal mt-2 max-w-2xl text-muted" style="--i:2">
+          {subtitle}
+        </p>
+      )}
+
+      <div class="mt-8 grid gap-6 md:grid-cols-2">
+        {products.map((product, i) => (
+          <ProductCard product={product} index={i + 3} />
+        ))}
+      </div>
+    </section>
+  )
+}

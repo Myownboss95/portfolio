@@ -1,0 +1,112 @@
+---
+title: "Idempotency for LLM Agents: Lessons from Payments"
+description: "Payments engineering solved unreliable retries a decade ago with idempotency keys and a ledger. LLM agents have the same failure mode and almost none of the discipline. Here's the transfer."
+pubDate: 2026-06-12
+tags: ["LLM", "Agents", "Payments", "Reliability", "Architecture"]
+draft: false
+---
+
+An LLM agent that calls tools is a distributed system with a non-deterministic
+scheduler. That framing is not a metaphor. It is the accurate description, and it
+means the hard problems are not prompt problems — they are the same
+retry-and-partial-failure problems payments engineering worked out years ago.
+
+The claim I want to make: **every write an agent can perform needs an idempotency
+key derived from intent, not from the call.** Everything else follows from that.
+
+## Why agent retries are worse than normal retries
+
+In a conventional service, a retry happens because a request timed out. The
+client repeats the *same* bytes. Deduplication is easy: hash the payload, or
+require the caller to send a key.
+
+An agent retries differently. The tool call times out, the loop feeds the error
+back into the model, and the model tries again — but it may reformulate. Same
+intent, different arguments. `{"amount": 500, "currency": "USD"}` becomes
+`{"amount_minor": 50000, "currency": "USD"}` because the error mentioned units.
+Payload hashing is now useless. You have two distinct requests that both mean
+"send the money once."
+
+Worse, the failure mode is invisible in the transcript. The agent sees a timeout,
+then a success, and reports success. The duplicate is only visible in the ledger.
+
+```
+model → tool: transfer(500 USD)   → gateway ACK → TIMEOUT before response
+model ← tool: "request timed out"
+model → tool: transfer(50000 minor USD)  → succeeds
+agent → user: "Done."             (money moved twice)
+```
+
+## The fix is an intent key, assigned before the model runs
+
+The instinct is to make the model generate the idempotency key. Don't. The model
+is the unreliable component; asking it to be the source of uniqueness puts the
+non-deterministic part in charge of the deterministic guarantee.
+
+Instead, mint the key at the point where the *task* enters the system — one level
+above the agent loop — and scope it to the semantic operation:
+
+```ts
+// assigned once, when the user's request is accepted
+const runId = uuid();
+
+// derived deterministically per logical operation within the run
+const key = hash(runId, "transfer", normalizedRecipient, normalizedAmount);
+
+await tools.transfer({ ...args, idempotencyKey: key });
+```
+
+Two properties matter. `runId` means a *new* user request gets a *new* key, so a
+legitimate second transfer is not swallowed. Normalising recipient and amount
+before hashing means the model's reformulation collapses to the same key. If the
+agent asks for 500 USD and then 50000 minor USD, both normalise to `50000` and
+the second call returns the first call's stored result.
+
+This is exactly the payments pattern: the key lives with the business intent, the
+gateway stores `key → outcome`, and a repeat within the retention window replays
+the outcome instead of re-executing. Nothing about it is AI-specific. That is the
+point.
+
+## Store the outcome, not just the fact
+
+A dedupe table that records "this key was seen" is not enough. The agent needs
+the *result* back, because it is going to reason about it. If a replayed call
+returns `409 Duplicate`, a model will often interpret that as failure and try a
+third variation. Return the original response body with a `replayed: true` flag,
+and the loop continues correctly.
+
+This is the same reason payment gateways return the original charge object rather
+than an error. Idempotency is about the caller being able to retry safely, which
+means the retry has to be *useful*.
+
+## The tradeoff: keys make some legitimate work impossible
+
+This is not free. Intent-scoped keys prevent the agent from performing two
+genuinely identical operations within a run. If a user asks an agent to "send
+$50 to Ada twice, as two separate payments," a naive normalisation blocks the
+second one — correctly, from the dedupe layer's perspective, and wrongly from the
+user's.
+
+The honest answer is that you have to decide, per tool, whether repeated
+identical intent is meaningful. For transfers it usually is not, and blocking is
+the right default. For "append a note to this case," repetition is meaningful and
+the key should include a sequence number the orchestrator increments. Getting
+this wrong in the safe direction produces a support ticket. Getting it wrong in
+the unsafe direction produces a chargeback.
+
+There is a second cost: the orchestrator now has to understand tool semantics
+well enough to normalise arguments. That is real coupling, and it argues for
+pushing normalisation *into* the tool contract itself — which is one of the
+concrete reasons a shared tool layer like an [MCP server](/work/mcp-tool-server)
+beats per-assistant integrations. Define the key derivation once, next to the
+tool, and every agent inherits it.
+
+## Reads are free, writes are not
+
+The last piece is triage. Idempotency machinery is only needed on the write path.
+Classify tools explicitly — read, write, irreversible-write — and apply the
+discipline in proportion. Most agent tools are reads. Wrapping them in dedupe
+logic costs latency and buys nothing.
+
+Agents will keep getting better at reasoning. They will not stop timing out, and
+the network will not stop dropping responses. Build the layer that assumes both.

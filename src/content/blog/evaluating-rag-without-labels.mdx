@@ -1,0 +1,117 @@
+---
+title: "How to Evaluate RAG Without a Labelled Dataset"
+description: "You will not get a golden set before you ship. Four evaluation techniques that need no labels — inverted queries, negative controls, retrieval-only metrics, and pairwise diffs — in cost order."
+pubDate: 2026-07-14
+tags: ["RAG", "Evaluation", "LLM", "Retrieval"]
+draft: false
+---
+
+The standard advice for evaluating a retrieval system is to build a labelled set
+of questions and correct answers. The standard advice is right and you are not
+going to do it, because at the point you need the eval most — before launch — you
+have no user questions, no annotation budget, and a knowledge base that changes
+weekly.
+
+So the practical question is what you can measure with zero labels. Quite a lot,
+it turns out, provided you stop trying to measure answer quality and start
+measuring things that are actually observable.
+
+## Start by evaluating retrieval, not answers
+
+Almost every "the assistant said something wrong" incident traces back to the
+right document not being in the context. Generation errors exist, but they are
+the smaller and later problem.
+
+This is good news for evaluation, because retrieval has a property generation
+does not: **the correct output is a document ID, not a paragraph.** You can score
+it exactly, with no judge, no rubric and no ambiguity. Recall@k and MRR are
+arithmetic. Answer quality is an opinion.
+
+So the first move is to stop treating the system as one box:
+
+```
+query → [ retrieve ] → chunks → [ generate ] → answer
+            ▲                        ▲
+       measurable                 opinion
+       exactly                    (expensive)
+```
+
+Everything below is about producing test cases for the left-hand box.
+
+## Technique 1: Invert your own documents
+
+You do not have questions, but you have answers — the knowledge base is nothing
+but answers. So generate the questions from them.
+
+For each chunk, have a model write two or three questions that this chunk and
+only this chunk answers. The chunk's ID is the label. That is a synthetic eval
+set, produced in an afternoon, of exactly the size of your corpus.
+
+The obvious objection is that these questions are unrealistically well-formed —
+they use the document's own vocabulary, so retrieval finds them too easily and
+your scores are inflated. True, and it is fixable in two ways. First, instruct
+the generator to write in the register of an actual user: lowercase, no
+punctuation, wrong terminology, one clause. Second, and more usefully, treat the
+absolute number as meaningless and only ever compare configurations against each
+other. A synthetic set that ranks chunking strategy A above B is doing its job
+even if both scores are optimistic.
+
+There is one class of failure this method cannot see: questions your corpus does
+not answer at all. Which is the next technique.
+
+## Technique 2: Negative controls
+
+Write fifty questions that are plausibly in-domain but definitively not covered —
+about products you do not offer, features that were deprecated, policies that do
+not exist. These need no labels either, because the correct behaviour is known in
+advance: retrieve nothing above threshold, and refuse.
+
+This is the single highest-value unlabelled test, and it is the one teams skip.
+It measures the failure mode with the worst consequences, it takes an hour to
+write, and it will catch a badly-calibrated score threshold immediately. Track
+the pass rate as a hard gate in CI.
+
+## Technique 3: Metrics that need no ground truth at all
+
+Some signals are computable from the retrieval output alone:
+
+- **Score distribution.** Plot top-1 fused scores across your synthetic queries.
+  A healthy system is bimodal — confident hits and clear misses. A single broad
+  hump means your threshold is separating nothing, and abstention is effectively
+  random.
+- **Retrieval overlap across paraphrases.** Ask the same thing three ways. If the
+  top-5 sets barely intersect, the system is unstable in a way users will notice
+  as inconsistency, regardless of whether any individual answer was right.
+- **Corpus coverage.** Which chunks are never retrieved by anything? Dead chunks
+  are either badly written, badly chunked, or genuinely redundant. All three are
+  worth knowing.
+- **Answer-to-context attribution rate.** For generated answers, what fraction of
+  claims map to a retrieved span? No labels needed — it is a containment check
+  against the context you already have.
+
+## Technique 4: Pairwise diffs, on real traffic
+
+Once you have any traffic, the cheapest ongoing eval is comparative. Run the
+candidate configuration in shadow alongside production, and only look at queries
+where the two disagree on the top result.
+
+The value is the filter. Reviewing 1,000 queries is a project; reviewing the 40
+where a change altered the outcome is an afternoon, and it is where all the
+information is. You are not asking "is this good?" — you are asking "which of
+these two is better?", which humans answer fast and consistently.
+
+## The tradeoff
+
+None of this measures what you actually care about, which is whether users got
+correct help. Synthetic queries drift from real ones. Negative controls test a
+boundary, not the interior. Pairwise diffs only find regressions relative to
+where you already are — they will never tell you that both configurations are
+mediocre.
+
+So this is scaffolding, not a substitute. Its job is to keep you honest until
+real traffic arrives, and then to be replaced, question by question, with logged
+queries and human-confirmed answers. The transition is the point: every escalation
+and every abstention your system logs is a free, perfectly-labelled test case,
+and a [production assistant](/work/rag-support-assistant) generates them
+continuously. Build the unlabelled harness so that it has a slot for real data,
+and the migration costs nothing.

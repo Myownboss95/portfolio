@@ -1,0 +1,438 @@
+---
+import { SOCIALS, SITE, STATUS } from '../consts';
+// Glyphs live in one shared component so every surface (dock, footer, /about,
+// /contact) draws the same mark at the same optical weight.
+import SocialIcon from './SocialIcon.astro';
+---
+
+<!--
+  ContactDock — a floating contact launcher, not a chat widget.
+
+  Progressive enhancement: the whole dock ships with `hidden` on the wrapper and
+  the inline script below removes it. Chosen over "render a plain link to
+  /contact" because the collapsed control is a real <button> whose only job is
+  to open a JS-driven panel — with no JS it would be a dead control, and a
+  no-JS visitor already has Contact in the header nav and the footer, so there
+  is nothing to lose by not painting it. Nothing here is the only route to any
+  information.
+
+  z-index: 30. The sticky header is z-40 and the command palette dialog is z-50,
+  so the dock sits above ordinary page content but below both — the palette's
+  full-screen backdrop correctly covers it when open, and the header wins any
+  overlap while scrolling.
+-->
+<div id="contact-dock" class="contact-dock fixed z-30" hidden>
+  <!-- Panel first in DOM order so it renders above the trigger visually and
+       reads before it for screen readers when open. -->
+  <div
+    id="contact-dock-panel"
+    class="dock-panel rounded-2xl border border-app bg-card"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="contact-dock-title"
+    hidden
+  >
+    <div class="border-b border-app px-4 py-3">
+      <h2 id="contact-dock-title" class="text-sm font-semibold text-main">Get in touch</h2>
+      <p class="mt-1 flex items-center gap-2 text-xs text-muted">
+        {STATUS.available && <span class="status-dot shrink-0" aria-hidden="true"></span>}
+        <span>{STATUS.label}</span>
+      </p>
+    </div>
+
+    <ul class="dock-rows px-2 py-2" role="list">
+      {
+        SOCIALS.map((s, i) => {
+          const external = s.href.startsWith('http');
+          return (
+            <li class="dock-row" style={`--i:${i}`}>
+              <a
+                href={s.href}
+                class="flex items-center gap-3 rounded-lg px-2 py-2 text-sm"
+                rel={external ? 'noopener noreferrer' : undefined}
+                target={external ? '_blank' : undefined}
+              >
+                <span class="dock-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-app bg-soft text-muted">
+                  <SocialIcon label={s.label} size={16} />
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-main">{s.label}</span>
+                  <span class="block truncate font-mono text-[11px] text-faint">{s.handle}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    <div class="dock-row space-y-2 border-t border-app px-3 py-3" style={`--i:${SOCIALS.length}`}>
+      <a
+        href="/contact"
+        class="dock-cta flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+          <path
+            d="M21 4 3 11l7 3 3 7z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          ></path>
+          <path d="m10 14 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+        </svg>
+        Send a message
+      </a>
+      <a
+        href={SITE.resumeUrl}
+        class="dock-secondary flex items-center justify-center gap-2 rounded-lg border border-app px-3 py-2 text-sm text-muted"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+          <path
+            d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v1A2 2 0 0 0 6.5 20.5h11a2 2 0 0 0 2-2v-1"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        Download résumé
+      </a>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    id="contact-dock-trigger"
+    class="dock-trigger relative flex h-14 w-14 items-center justify-center rounded-full"
+    aria-expanded="false"
+    aria-controls="contact-dock-panel"
+    aria-label="Open contact options"
+  >
+    <span class="dock-glyphs">
+      <svg class="dock-glyph dock-glyph-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+        <path
+          d="M4.5 5.5h15a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5V16.5a1.5 1.5 0 0 1-1.5-1.5V7a1.5 1.5 0 0 1 1.5-1.5z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linejoin="round"></path>
+      </svg>
+      <svg class="dock-glyph dock-glyph-close" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+        <path
+          d="m7 7 10 10M17 7 7 17"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"></path>
+      </svg>
+    </span>
+    {STATUS.available && <span class="dock-dot status-dot" aria-hidden="true"></span>}
+  </button>
+</div>
+
+<style>
+  .contact-dock {
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    /* Only the dock's own controls should be clickable — the flex column is
+       otherwise an invisible rectangle sitting over page tap targets. */
+    pointer-events: none;
+  }
+  .contact-dock > * {
+    pointer-events: auto;
+  }
+
+  /* ---- Trigger ---------------------------------------------------------- */
+  .dock-trigger {
+    color: #04201c;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    box-shadow:
+      0 10px 30px -10px rgba(0, 0, 0, 0.6),
+      0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent);
+    transition:
+      transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1),
+      box-shadow 0.25s ease;
+  }
+  .dock-trigger:hover {
+    transform: translateY(-2px) scale(1.04);
+  }
+  .dock-trigger:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  .dock-glyphs {
+    position: relative;
+    display: block;
+    width: 22px;
+    height: 22px;
+  }
+  .dock-glyph {
+    position: absolute;
+    inset: 0;
+    transition:
+      opacity 0.22s ease,
+      transform 0.32s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+  .dock-glyph-close {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  .contact-dock.is-open .dock-glyph-open {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  .contact-dock.is-open .dock-glyph-close {
+    opacity: 1;
+    transform: none;
+  }
+
+  .dock-dot {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    background: var(--bg);
+  }
+  .dock-dot::after {
+    background: var(--bg);
+  }
+  .contact-dock.is-open .dock-dot {
+    opacity: 0;
+  }
+
+  /* ---- Panel ------------------------------------------------------------ */
+  .dock-panel {
+    width: 19.5rem;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform-origin: bottom right;
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.65);
+  }
+  .dock-panel[hidden] {
+    display: none;
+  }
+  /* Entrance: scale + fade + a nudge out of the trigger's corner. */
+  .dock-panel.is-entering {
+    animation: dock-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .dock-panel.is-leaving {
+    animation: dock-out 0.16s ease-in both;
+  }
+  @keyframes dock-in {
+    from {
+      opacity: 0;
+      transform: translate(8px, 12px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes dock-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translate(6px, 8px) scale(0.94);
+    }
+  }
+
+  .dock-panel.is-entering .dock-row {
+    animation: dock-row-in 0.3s ease-out both;
+    animation-delay: calc(80ms + var(--i) * 35ms);
+  }
+  @keyframes dock-row-in {
+    from {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .dock-rows a {
+    transition:
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+  .dock-rows a:hover {
+    background: var(--bg-soft);
+    transform: translateX(2px);
+  }
+  .dock-rows a:hover .dock-icon {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+  .dock-icon {
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .dock-cta {
+    color: #04201c;
+    background: var(--accent);
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+  .dock-cta:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+  .dock-secondary {
+    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .dock-secondary:hover {
+    color: var(--text);
+    background: var(--bg-soft);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  }
+
+  /* Small screens: tuck in tighter and keep clear of the thumb zone. */
+  @media (max-width: 400px) {
+    .contact-dock {
+      right: 0.75rem;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    }
+    .dock-panel {
+      max-width: calc(100vw - 1.5rem);
+    }
+  }
+  /* Short/landscape phones: don't let the panel exceed the viewport. */
+  @media (max-height: 600px) {
+    .dock-panel {
+      max-height: calc(100vh - 6rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-trigger,
+    .dock-glyph,
+    .dock-rows a,
+    .dock-icon,
+    .dock-cta,
+    .dock-secondary {
+      transition: none;
+    }
+    .dock-trigger:hover,
+    .dock-trigger:active,
+    .dock-rows a:hover,
+    .dock-cta:hover {
+      transform: none;
+    }
+    .dock-panel.is-entering,
+    .dock-panel.is-leaving,
+    .dock-panel.is-entering .dock-row {
+      animation: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const dock = document.getElementById('contact-dock');
+    const panel = document.getElementById('contact-dock-panel');
+    const trigger = document.getElementById('contact-dock-trigger');
+    if (!dock || !panel || !trigger) return;
+
+    // Progressive enhancement: nothing is painted until JS is here to drive it.
+    dock.hidden = false;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    let open = false;
+    let leaveTimer = 0;
+
+    const focusables = () => Array.from(panel.querySelectorAll(FOCUSABLE));
+
+    function openDock() {
+      if (open) return;
+      open = true;
+      window.clearTimeout(leaveTimer);
+      panel.classList.remove('is-leaving');
+      panel.hidden = false;
+      dock.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      trigger.setAttribute('aria-label', 'Close contact options');
+      if (!reduced.matches) {
+        panel.classList.add('is-entering');
+        panel.addEventListener('animationend', () => panel.classList.remove('is-entering'), {
+          once: true,
+        });
+      }
+      const first = focusables()[0];
+      if (first) first.focus();
+    }
+
+    function closeDock(returnFocus) {
+      if (!open) return;
+      open = false;
+      dock.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.setAttribute('aria-label', 'Open contact options');
+      panel.classList.remove('is-entering');
+      const finish = () => {
+        panel.classList.remove('is-leaving');
+        panel.hidden = true;
+      };
+      if (reduced.matches) {
+        finish();
+      } else {
+        panel.classList.add('is-leaving');
+        leaveTimer = window.setTimeout(finish, 170);
+      }
+      if (returnFocus) trigger.focus();
+    }
+
+    trigger.addEventListener('click', () => (open ? closeDock(true) : openDock()));
+
+    // Escape closes and hands focus back to the trigger. Only act while open so
+    // we never swallow Escape from the command palette or anything else.
+    document.addEventListener('keydown', (e) => {
+      if (!open) return;
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        closeDock(true);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      // Focus trap: the trigger is part of the loop so Shift+Tab from the first
+      // row lands back on the control that opened the panel.
+      const items = focusables().concat([trigger]);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (!dock.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+
+    // Click outside closes.
+    document.addEventListener('pointerdown', (e) => {
+      if (open && !dock.contains(e.target)) closeDock(false);
+    });
+
+    // Following a link inside the panel should leave it closed on return.
+    panel.addEventListener('click', (e) => {
+      if (e.target.closest('a')) closeDock(false);
+    });
+  })();
+</script>

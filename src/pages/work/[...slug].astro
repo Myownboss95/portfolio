@@ -2,6 +2,8 @@
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReadingProgress from '../../components/ReadingProgress.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -12,8 +14,12 @@ export const getStaticPaths = (async () => {
 }) satisfies GetStaticPaths;
 
 const { project } = Astro.props;
-const { Content } = await render(project);
+const { Content, headings } = await render(project);
 const d = project.data;
+
+// Only top-level sections ("The problem", "Constraints", …). H3s are detail
+// inside a section and would make the sidebar noisier than the article.
+const tocHeadings = headings.filter((h) => h.depth === 2);
 
 const links = [
   d.links.live && { label: 'Live site', href: d.links.live },
@@ -24,7 +30,11 @@ const links = [
 ---
 
 <BaseLayout title={d.title} description={d.summary}>
-  <article class="mx-auto max-w-3xl px-5 py-16">
+  <ReadingProgress target="article" />
+
+  {/* `relative` anchors the floating TOC, which is absolutely positioned into
+      the gutter beside this (still centred, still max-w-3xl) article. */}
+  <article class="relative mx-auto max-w-3xl px-5 py-16">
     <a href="/work" class="font-mono text-sm text-muted transition hover:text-accent">← All work</a>
 
     <header class="mt-6 border-b border-app pb-8">
@@ -62,8 +72,21 @@ const links = [
       )}
     </header>
 
+    <TableOfContents headings={tocHeadings} variant="inline" />
+    <TableOfContents headings={tocHeadings} variant="floating" />
+
     <div class="prose-case mt-8">
       <Content />
     </div>
   </article>
 </BaseLayout>
+
+<style>
+  /* MDX headings are rendered by the content pipeline, so they sit outside this
+     component's style scope — :global reaches them. Without the scroll-margin
+     an anchor jump parks the heading underneath the sticky header. */
+  .prose-case :global(h2),
+  .prose-case :global(h3) {
+    scroll-margin-top: 5.5rem;
+  }
+</style>

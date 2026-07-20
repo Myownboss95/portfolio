@@ -1,0 +1,316 @@
+---
+import { Image } from 'astro:assets';
+import portrait from '../assets/daniel-portrait.jpg';
+import SocialIcon from './SocialIcon.astro';
+import { SITE, STATUS, SOCIALS } from '../consts';
+
+// Rotating job titles. Every one has to be defensible — this is the first line
+// a recruiter reads, so it's positioning, not decoration.
+const ROLES = [
+  'Senior Full Stack Engineer',
+  'AI / LLM Engineer',
+  'Fintech Systems Engineer',
+  'Technical Lead',
+];
+
+// At-a-glance facts. Phone is dropped from the social row — WhatsApp already
+// carries the same number and the tile row reads cleaner at five.
+const socials = SOCIALS.filter((s) => s.label !== 'Phone');
+
+const META = [
+  { icon: 'pin', text: 'Remote, worldwide' },
+  { icon: 'briefcase', text: '8+ years experience' },
+  { icon: 'clock', text: STATUS.label },
+];
+---
+
+<section class="relative overflow-hidden">
+  <div class="hero-glow" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-3xl px-5 pb-14 pt-14 sm:pt-20">
+    <!-- Identity -->
+    <div class="flex items-center gap-4 sm:gap-6">
+      <div class="avatar-ring shrink-0">
+        <Image
+          src={portrait}
+          alt={`Illustrated portrait of ${SITE.name}`}
+          widths={[96, 144, 224]}
+          sizes="(min-width: 640px) 112px, 80px"
+          loading="eager"
+          fetchpriority="high"
+          class="avatar-img"
+        />
+      </div>
+
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 class="text-3xl font-bold tracking-tight text-main sm:text-4xl md:text-5xl">
+            {SITE.name}
+          </h1>
+          {
+            STATUS.available && (
+              <span class="inline-flex items-center gap-1.5 rounded-md border border-accent/30 bg-accent/10 px-2.5 py-1 font-mono text-xs text-accent">
+                <span class="status-dot" aria-hidden="true" />
+                Open to work
+              </span>
+            )
+          }
+        </div>
+
+        <!-- Rotating role. The first one ships in the HTML, so with JS off the
+             line is still correct rather than empty. -->
+        <p class="mt-1.5 flex min-h-[1.75rem] items-center font-mono text-base text-muted sm:text-lg">
+          <span id="hero-role" data-roles={JSON.stringify(ROLES)}>{ROLES[0]}</span
+          ><span class="hero-caret" aria-hidden="true"></span>
+        </p>
+        <span class="sr-only">Also: {ROLES.slice(1).join(', ')}.</span>
+      </div>
+    </div>
+
+    <!-- Facts -->
+    <ul
+      class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-app py-4 font-mono text-sm text-muted"
+      role="list"
+    >
+      {
+        META.map((item) => (
+          <li class="flex items-center gap-2">
+            <svg
+              class="h-4 w-4 shrink-0 text-faint"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              {item.icon === 'pin' && (
+                <>
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                  <circle cx="12" cy="10" r="3" />
+                </>
+              )}
+              {item.icon === 'briefcase' && (
+                <>
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </>
+              )}
+              {item.icon === 'clock' && (
+                <>
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
+                </>
+              )}
+            </svg>
+            {item.text}
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- Socials -->
+    <ul class="mt-6 flex flex-wrap gap-2" role="list">
+      {
+        socials.map((s) => {
+          const external = s.href.startsWith('http');
+          return (
+            <li>
+              <a
+                href={s.href}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
+                aria-label={`${s.label} — ${s.handle}`}
+                class="social-tile inline-flex h-11 w-11 items-center justify-center rounded-lg border border-app bg-card text-muted"
+              >
+                <SocialIcon label={s.label} size={19} />
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    <!-- Pitch -->
+    <p class="mt-8 max-w-2xl text-lg leading-relaxed text-muted">
+      <strong class="font-semibold text-main"
+        >I build LLM systems with the rigour of payment infrastructure.</strong
+      >{' '}
+      8+ years shipping production software. Today that means RAG pipelines, agentic tool-use
+      workflows, and a custom MCP server. Before that, as CTO of a pan-African neobank, I owned
+      cross-border payments, virtual card issuance, KYC/AML, and end-to-end encryption.
+    </p>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a
+        href={SITE.resumeUrl}
+        class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#06140f] transition hover:opacity-90"
+      >
+        Download résumé
+      </a>
+      <a
+        href="/contact"
+        class="rounded-lg border border-app px-5 py-2.5 text-sm font-semibold text-main transition hover:border-accent hover:text-accent"
+      >
+        Get in touch
+      </a>
+      <a
+        href="/work"
+        class="rounded-lg border border-app px-5 py-2.5 text-sm font-semibold text-main transition hover:border-accent hover:text-accent"
+      >
+        View my work
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Decorative accent bloom. Subtle — depth, not a gradient someone forgot. */
+  .hero-glow {
+    position: absolute;
+    top: -18rem;
+    left: 50%;
+    width: 42rem;
+    height: 42rem;
+    margin-left: -21rem;
+    border-radius: 9999px;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 13%, transparent) 0%,
+      transparent 65%
+    );
+    pointer-events: none;
+  }
+  :global(html.light) .hero-glow {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 10%, transparent) 0%,
+      transparent 65%
+    );
+  }
+
+  .avatar-ring {
+    width: 80px;
+    height: 80px;
+    border-radius: 9999px;
+    padding: 2px;
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--accent) 70%, transparent),
+      color-mix(in srgb, var(--border) 85%, transparent)
+    );
+  }
+  @media (min-width: 640px) {
+    .avatar-ring {
+      width: 112px;
+      height: 112px;
+    }
+  }
+  .avatar-ring :global(.avatar-img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    object-fit: cover;
+    background: var(--bg-soft);
+  }
+
+  .hero-caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    margin-left: 2px;
+    background: var(--accent);
+    vertical-align: -0.15em;
+    animation: hero-blink 1.05s step-end infinite;
+  }
+  @keyframes hero-blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .social-tile {
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+  .social-tile:hover {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-caret {
+      animation: none;
+    }
+    .social-tile {
+      transition: none;
+    }
+    .social-tile:hover {
+      transform: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  // Typewriter cycle through the roles. Skipped entirely under reduced motion —
+  // a typewriter is exactly what that setting exists to switch off.
+  (() => {
+    const el = document.getElementById('hero-role');
+    if (!el) return;
+
+    let roles;
+    try {
+      roles = JSON.parse(el.dataset.roles || '[]');
+    } catch {
+      return;
+    }
+    if (roles.length < 2) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const TYPE = 55;
+    const ERASE = 30;
+    const HOLD = 1900;
+    const BETWEEN = 400;
+
+    let roleIndex = 0;
+    let charIndex = roles[0].length;
+    let erasing = true;
+
+    const tick = () => {
+      if (erasing) {
+        charIndex -= 1;
+        el.textContent = roles[roleIndex].slice(0, charIndex);
+        if (charIndex <= 0) {
+          erasing = false;
+          roleIndex = (roleIndex + 1) % roles.length;
+          setTimeout(tick, BETWEEN);
+          return;
+        }
+        setTimeout(tick, ERASE);
+        return;
+      }
+
+      charIndex += 1;
+      el.textContent = roles[roleIndex].slice(0, charIndex);
+      if (charIndex >= roles[roleIndex].length) {
+        erasing = true;
+        setTimeout(tick, HOLD);
+        return;
+      }
+      setTimeout(tick, TYPE);
+    };
+
+    setTimeout(tick, HOLD);
+  })();
+</script>

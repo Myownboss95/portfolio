@@ -2,46 +2,131 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProjectCard from '../components/ProjectCard.astro';
-import { SITE } from '../consts';
+import Hero from '../components/Hero.astro';
+import TechStack from '../components/TechStack.astro';
+import GitHubActivity from '../components/GitHubActivity.astro';
+import JourneyRow from '../components/JourneyRow.astro';
+import Products from '../components/Products.astro';
+import { SITE, STATUS, STATS } from '../consts';
+import { experience } from '../data/experience';
 
 const projects = (await getCollection('projects')).sort(
   (a, b) => a.data.order - b.data.order
 );
 const featured = projects.filter((p) => p.data.featured).slice(0, 4);
 
-const skills = [
-  { group: 'Backend', items: ['PHP / Laravel (8+ yrs)', 'Node.js / NestJS (5+ yrs)', 'TypeScript', 'REST API design', 'WebSockets', 'Redis queues'] },
-  { group: 'Payments', items: ['Virtual card issuance', 'Cross-border FX & remittance', 'KYC / AML pipelines', 'Webhook architecture', 'Event-driven integrations'] },
-  { group: 'Frontend & Mobile', items: ['Vue / Nuxt (5+ yrs)', 'React / Next (4+ yrs)', 'Tailwind CSS', 'Flutter / Dart'] },
-  { group: 'DevOps & Security', items: ['Docker', 'CI/CD', 'AWS / DigitalOcean', 'Cloudflare WAF', 'OWASP Top 10', 'E2E encryption'] },
+// The two tracks. Equal billing — neither overshadows the other.
+const tracks = [
+  {
+    label: 'AI / LLM Engineering',
+    blurb: 'LLM products in production — not demos.',
+    items: [
+      'Retrieval-Augmented Generation (vector + keyword)',
+      'Agentic workflows & tool-use / function calling',
+      'Model Context Protocol (MCP) server development',
+      'LLM-assisted document & data extraction',
+      'Anthropic Claude · OpenAI (multi-provider)',
+      'Embeddings & pgvector search',
+      'Prompt engineering, grounding & evaluation',
+    ],
+  },
+  {
+    label: 'Systems & Payments',
+    blurb: 'Eight years of software that has to be correct.',
+    items: [
+      'PHP / Laravel (8+ yrs)',
+      'Node.js / NestJS (5+ yrs) · TypeScript · Go &amp; Python (services)',
+      'Virtual card issuance & lifecycle',
+      'Cross-border FX, remittance & liquidity routing',
+      'KYC / AML pipelines & progressive gating',
+      'Webhook & event-driven integrations',
+      'PostgreSQL · Redis queues · WebSockets',
+    ],
+  },
 ];
+
+// NOTE: the old "Also work with" columns (Infra & DevOps / Frontend / Security)
+// lived here. They duplicated the Tech stack grid below, so they were folded
+// into it — Security is now a category in `data/stack.ts`.
 ---
 
 <BaseLayout>
   <!-- Hero -->
-  <section class="mx-auto max-w-5xl px-5 pb-16 pt-20 sm:pt-28">
-    <p class="mb-4 font-mono text-sm text-accent">{SITE.location} · Open to remote &amp; on-site roles</p>
-    <h1 class="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-main sm:text-5xl md:text-6xl">
-      I build the backend that moves money — securely, at scale.
-    </h1>
-    <p class="mt-6 max-w-2xl text-lg leading-relaxed text-muted">
-      Senior backend-heavy fullstack engineer & technical lead with <strong class="text-main">8+ years</strong>
-      shipping production fintech: cross-border payments, virtual card issuance, KYC/AML, and
-      end-to-end encryption. Former CTO at a pan-African neobank.
-    </p>
+  <Hero />
 
-    <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/work" class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#06140f] transition hover:opacity-90">
-        View my work
-      </a>
-      <a href="/contact" class="rounded-lg border border-app px-5 py-2.5 text-sm font-semibold text-main transition hover:border-accent hover:text-accent">
-        Get in touch
-      </a>
-      <a href={SITE.resumeUrl} class="rounded-lg border border-app px-5 py-2.5 text-sm font-semibold text-main transition hover:border-accent hover:text-accent">
-        Download résumé
-      </a>
+  <!-- Proof, in numbers -->
+  <section class="border-y border-app bg-soft">
+    <div class="mx-auto max-w-5xl px-5 py-8">
+      <dl class="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
+        {
+          STATS.map((stat, i) => (
+            <div class="reveal" style={`--i:${i}`}>
+              <dt class="text-2xl font-bold tracking-tight text-main sm:text-3xl">{stat.value}</dt>
+              <dd class="mt-0.5 font-mono text-xs leading-relaxed text-faint">{stat.label}</dd>
+            </div>
+          ))
+        }
+      </dl>
     </div>
   </section>
+
+  <!-- The two tracks -->
+  <section class="mx-auto max-w-5xl px-5 py-16">
+    <h2 class="text-2xl font-bold tracking-tight text-main">Two tracks, one engineer</h2>
+    <p class="mt-2 max-w-2xl text-muted">
+      The AI work is new. The discipline behind it isn’t — it comes from years of building systems
+      where being wrong costs someone real money.
+    </p>
+
+    <div class="mt-8 grid gap-5 md:grid-cols-2">
+      {
+        tracks.map((track, i) => (
+          <div class="reveal rounded-xl border border-app bg-card p-6" style={`--i:${i}`}>
+            <h3 class="font-mono text-sm font-semibold uppercase tracking-wider text-accent">
+              {track.label}
+            </h3>
+            <p class="mt-2 text-sm text-muted">{track.blurb}</p>
+            <ul class="mt-4 space-y-2">
+              {track.items.map((item) => (
+                <li class="flex gap-2.5 text-sm leading-relaxed text-muted">
+                  <span class="mt-[0.45rem] h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Professional Journey. Summary view of the same data /about renders in
+       full; rows are native <details> so they work with zero JS. -->
+  <section class="mx-auto max-w-5xl px-5 py-16">
+    <p class="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-accent">Experience</p>
+    <h2 class="mt-3 text-3xl font-bold tracking-tight text-main sm:text-4xl">Professional Journey</h2>
+    <p class="mt-3 max-w-2xl text-muted">
+      Eight years across fintech, payments, and now LLM systems — expand a role for the detail.
+    </p>
+
+    <div class="mt-8 space-y-3">
+      {experience.map((job, i) => <JourneyRow job={job} index={i} />)}
+    </div>
+
+    <a href="/about" class="mt-6 inline-block text-sm font-medium text-accent hover:underline">
+      Full experience →
+    </a>
+  </section>
+
+  <!-- Tech stack -->
+  <TechStack />
+
+  <!-- Live GitHub activity (fetched at build time, baked into the HTML) -->
+  <GitHubActivity />
+
+  <!-- Shipped products — the public artefacts, ahead of the deep-dive case
+       studies below them. -->
+  <Products />
 
   <!-- Featured work -->
   <section class="border-t border-app bg-soft">
@@ -57,7 +142,11 @@ const skills = [
       {
         featured.length > 0 ? (
           <div class="grid gap-5 sm:grid-cols-2">
-            {featured.map((project) => <ProjectCard project={project} />)}
+            {featured.map((project, i) => (
+              <div class="reveal" style={`--i:${i}`}>
+                <ProjectCard project={project} />
+              </div>
+            ))}
           </div>
         ) : (
           <p class="text-muted">Case studies coming soon.</p>
@@ -66,31 +155,12 @@ const skills = [
     </div>
   </section>
 
-  <!-- Skills -->
-  <section class="mx-auto max-w-5xl px-5 py-16">
-    <h2 class="text-2xl font-bold tracking-tight text-main">What I work with</h2>
-    <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-      {
-        skills.map((col) => (
-          <div>
-            <h3 class="mb-3 font-mono text-sm font-semibold text-accent">{col.group}</h3>
-            <ul class="space-y-1.5">
-              {col.items.map((item) => (
-                <li class="text-sm text-muted">{item}</li>
-              ))}
-            </ul>
-          </div>
-        ))
-      }
-    </div>
-  </section>
-
   <!-- CTA -->
   <section class="border-t border-app">
     <div class="mx-auto max-w-5xl px-5 py-16 text-center">
-      <h2 class="text-2xl font-bold tracking-tight text-main">Looking for a senior backend / fullstack engineer?</h2>
+      <h2 class="text-2xl font-bold tracking-tight text-main">Building something with LLMs — or something that moves money?</h2>
       <p class="mx-auto mt-3 max-w-xl text-muted">
-        I’m open to remote and on-site roles. Let’s talk about what you’re building.
+        I’m open to senior AI and backend roles, remote or on-site. Let’s talk about what you’re building.
       </p>
       <a href="/contact" class="mt-6 inline-block rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-[#06140f] transition hover:opacity-90">
         Contact me

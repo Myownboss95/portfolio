@@ -1,0 +1,87 @@
+---
+title: "Core Payment Infrastructure & Collections"
+role: "Senior Backend Engineer"
+company: "Glyde"
+period: "2023 — Present"
+summary: "The foundation under a payment service provider — service boundaries, a double-entry ledger as the single source of financial truth, an idempotent webhook and event backbone, and merchant collections over bank transfer, virtual accounts and cards."
+stack: ["Laravel", "PHP", "TypeScript", "Node.js", "Nuxt", "Microservices"]
+domain: ["Payments", "Fintech", "Architecture"]
+featured: true
+order: 6
+sourcePrivate: true
+---
+
+## The problem
+
+A payment service provider is, underneath the product surface, one promise: **the money is where we say it is**. Every merchant dashboard figure, every settlement, every reconciliation report is a claim about balances. If the system that produces those numbers can drift, nothing built on top of it can be trusted, and the failure won't announce itself — it shows up weeks later as a balance nobody can explain.
+
+That foundation has to hold while the least reliable part of the system — third-party payment providers and banks — behaves exactly as third parties do: duplicate webhooks, out-of-order callbacks, timeouts on requests that actually succeeded, and settlement that lands whenever it lands.
+
+## Constraints
+
+- **Correctness is the product.** A dropped or double-counted transaction isn't a bug report, it's someone's money.
+- **The network is hostile by default.** Providers retry, duplicate, reorder, and occasionally go silent mid-flow. Every inbound event had to be assumed unreliable.
+- **Multiple services, one truth.** Collections, verification, merchant management and payouts all touch money, but they cannot each hold their own opinion of a balance.
+- **Two very different collection rails.** Bank transfer and virtual accounts are asynchronous and land when they land; cards are synchronous with authorisation, capture and chargebacks. Both had to reconcile into the same ledger.
+- **Reconciliation has to be possible after the fact**, not reconstructed by reading logs.
+
+## What I built
+
+The core platform: service boundaries, the ledger, the event backbone, and the collections layer on top of them.
+
+```text
+   ┌──────────┐  ┌──────────────┐  ┌──────────┐
+   │ Merchant │  │ Collections  │  │   KYB    │   ← services own their
+   │  mgmt    │  │              │  │          │      domain, not balances
+   └────┬─────┘  └──────┬───────┘  └────┬─────┘
+        │               │               │
+        └───────────────┼───────────────┘
+                        │  API gateway · auth
+                        ▼
+        ┌───────────────────────────────────┐
+        │   LEDGER  (double entry)          │  ← the only source of
+        │   every movement = balanced       │     financial truth
+        │   entries; balances are derived,  │
+        │   never stored as a mutable field │
+        └───────────────┬───────────────────┘
+                        ▲
+                        │ posts entries
+        ┌───────────────┴───────────────────┐
+        │   Event / webhook backbone        │
+        │   • dedupe by provider event id   │
+        │   • idempotency keys on writes    │
+        │   • retry with backoff            │
+        │   • out-of-order tolerant         │
+        └───────────────┬───────────────────┘
+                        ▲
+          ┌─────────────┴──────────────┐
+          │                            │
+   bank transfer /              card acquiring
+   virtual accounts             (auth → capture)
+   (async credit)
+```
+
+- **Service boundaries drawn around domains** — merchant management, collections, verification — with money movement deliberately *not* distributed among them. Services request state changes; only the ledger records them.
+- **A double-entry ledger** where every movement is balanced entries and a balance is a **derived** value, not a mutable column someone can increment. If the two sides don't agree the write doesn't happen, which turns a whole class of silent drift into a loud failure at write time.
+- **An idempotent event backbone.** Inbound provider webhooks are deduplicated on the provider's own event id, writes carry idempotency keys, and delivery retries with backoff. Processing the same webhook five times produces the same ledger as processing it once.
+- **Collections over two rails**: virtual accounts and bank transfer, where an inbound credit has to be matched back to the merchant and intent that expected it; and cards, with the authorisation/capture lifecycle and its own reversal paths. Different mechanics, one ledger.
+- **Shared platform plumbing** — authentication, the API gateway and surface, environments and deploys — so a new service inherits the foundation instead of reinventing it.
+
+## The decision that mattered
+
+**Making the ledger the only writer of financial truth, and derived balances the only readable form.**
+
+The faster path is a `balance` column on the merchant record that services update as things happen. It works immediately and it is a slow-motion disaster: every service that can write it becomes a place the number can go wrong, and once it drifts there is no authoritative record to reconcile back to — the wrong number *is* the record.
+
+Double entry costs more up front. Every movement needs both sides modelled, balances are computed rather than read, and some operations that "should" be one update become a posting. What it buys is that **an unexplainable balance becomes structurally impossible**: any figure can be traced to the entries that produced it, and any imbalance surfaces at write time rather than at month end.
+
+The related call was **idempotency as a property of the backbone, not of individual handlers**. Providers duplicate webhooks — that's normal operation, not an edge case. Handling it once, centrally, meant no future integration could forget to, and "did this already happen?" stopped being a question each service answered differently.
+
+## Impact
+
+- A payment platform where **balances are derived from an auditable entry trail**, so reconciliation is a query rather than an investigation.
+- Duplicate, delayed and out-of-order provider webhooks absorbed without corrupting state.
+- Two structurally different collection rails — asynchronous bank credit and synchronous card acquiring — settling into one consistent financial record.
+- Shared auth, gateway and deployment foundations that new services inherit.
+
+_Source code is private. Architecture and decisions summarized here — happy to walk through the ledger model and idempotency design in an interview._

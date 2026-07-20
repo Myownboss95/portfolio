@@ -1,0 +1,180 @@
+---
+import type { Product } from '../data/products';
+import { iconFor, brandVars } from '../lib/tech-icon';
+
+interface Props {
+  product: Product;
+  /** Stagger index for the shared `.reveal` scroll-in animation. */
+  index?: number;
+}
+
+const { product, index = 0 } = Astro.props;
+const { name, url, blurb, role, stack, image, imageAlt, caseStudySlug } = product;
+
+// Display host, e.g. "hizo.africa" — reads as proof the thing is actually live.
+const host = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+---
+
+<article
+  class="product-card reveal group flex h-full flex-col overflow-hidden rounded-xl border border-app bg-card transition duration-200 hover:border-accent hover:shadow-lg hover:shadow-black/10"
+  style={`--i:${index}`}
+>
+  <!-- Screenshot. The captures are light-coloured pages, so the frame gets its
+       own border and a soft backdrop to seat it against the card in both themes. -->
+  <div class="shot-frame overflow-hidden border-b border-app bg-soft">
+    <img
+      src={image}
+      alt={imageAlt}
+      width={1280}
+      height={720}
+      loading="lazy"
+      decoding="async"
+      class="shot-media aspect-video w-full object-cover object-top"
+    />
+  </div>
+
+  <div class="flex flex-1 flex-col p-5 sm:p-6">
+    <div class="flex items-baseline justify-between gap-3">
+      <h3 class="text-lg font-semibold tracking-tight text-main sm:text-xl">{name}</h3>
+      <span class="font-mono text-xs text-faint">{host}</span>
+    </div>
+
+    <p class="mt-1.5 font-mono text-xs text-accent">{role}</p>
+
+    <p class="mt-3 flex-1 text-sm leading-relaxed text-muted">{blurb}</p>
+
+    {
+      stack.length > 0 && (
+        <ul class="mt-4 flex flex-wrap items-center gap-1.5" role="list">
+          <li class="sr-only">Built with: {stack.join(', ')}.</li>
+          {stack.map((tech) => {
+            // Real brand mark where we have one; otherwise the name alone still
+            // carries the information, so the chip just loses its glyph.
+            const icon = iconFor(tech);
+            return (
+              <li
+                class="tech-pill inline-flex items-center gap-1.5 rounded-md border border-app bg-soft px-2 py-1 font-mono text-[11px] leading-none text-muted"
+                style={brandVars(icon)}
+                aria-hidden="true"
+              >
+                {icon && (
+                  <svg class="pill-icon" viewBox="0 0 24 24" focusable="false" set:html={icon.body} />
+                )}
+                {tech}
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+
+    <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-app pt-4">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Visit the ${name} website at ${host} (opens in a new tab)`}
+        class="visit-link inline-flex items-center gap-1.5 text-sm font-medium text-accent transition hover:gap-2.5"
+      >
+        Visit site
+        <span aria-hidden="true">→</span>
+      </a>
+
+      {
+        caseStudySlug && (
+          <a
+            href={`/work/${caseStudySlug}`}
+            class="text-sm text-muted transition hover:text-main"
+          >
+            Read the case study
+          </a>
+        )
+      }
+    </div>
+  </div>
+</article>
+
+<style>
+  /* Brand marks sit muted at rest so a row of vendor palettes doesn't shout,
+     then come up to full colour when the card is engaged. */
+  .pill-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex: none;
+    fill: currentColor;
+    color: var(--brand-dark, currentColor);
+    filter: saturate(0.5);
+    opacity: 0.8;
+    transition:
+      filter 0.2s ease,
+      opacity 0.2s ease;
+  }
+  :global(html.light) .pill-icon {
+    color: var(--brand-light, currentColor);
+  }
+  .product-card:hover .pill-icon,
+  .product-card:focus-within .pill-icon {
+    filter: none;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill-icon {
+      transition: none;
+    }
+  }
+
+  .product-card {
+    transform: translateZ(0);
+  }
+
+  .product-card:hover,
+  .product-card:focus-within {
+    transform: translateY(-3px);
+  }
+
+  /* Keyboard parity with hover: focusing a link inside lifts the card too. */
+  .product-card:focus-within {
+    border-color: var(--accent);
+  }
+
+  /* Seat the light screenshot: an inset hairline stops it reading as a floating
+     white slab on the dark card, and mirrors correctly when tokens flip. */
+  .shot-frame {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 85%, transparent);
+    border-top-left-radius: 0.7rem;
+    border-top-right-radius: 0.7rem;
+  }
+
+  .shot-media {
+    transition: transform 450ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  .product-card:hover .shot-media,
+  .product-card:focus-within .shot-media {
+    transform: scale(1.04);
+  }
+
+  .visit-link {
+    transition:
+      gap 180ms ease,
+      color 180ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-card,
+    .product-card:hover,
+    .product-card:focus-within,
+    .shot-media,
+    .product-card:hover .shot-media,
+    .product-card:focus-within .shot-media {
+      transform: none;
+      transition: none;
+    }
+    .visit-link,
+    .visit-link:hover {
+      gap: 0.375rem;
+      transition: none;
+    }
+  }
+</style>

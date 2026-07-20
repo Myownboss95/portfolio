@@ -1,0 +1,102 @@
+---
+title: "What it actually takes to ground a RAG support assistant"
+description: "Semantic search alone will not ground an LLM support assistant in a regulated product. Hybrid retrieval, exact-match recall, and a first-class \"I don't know\" are the parts that do the work."
+pubDate: 2026-07-20
+tags: ["RAG", "LLM", "Retrieval", "Fintech"]
+draft: false
+---
+
+Most RAG demos work because the questions are vague. "How do I reset my
+password?" is a soft target — any half-decent embedding model puts the right
+document in the top three. Support questions in a regulated financial product are
+not like that. They are specific, they contain identifiers, and getting them
+subtly wrong has consequences that a chat log will not surface until someone
+complains.
+
+The gap between a demo and something you can put in front of customers is almost
+entirely in retrieval and in what the model is allowed to do when retrieval comes
+back thin.
+
+## Semantic search misses exactly the things that matter
+
+Embeddings encode meaning. That is the feature, and in a support context it is
+also the failure mode.
+
+A user pastes an error code — `DECLINE_51`, say — and asks what it means. In
+embedding space that token carries almost no signal. It is a short, rare, mostly
+opaque string. The nearest neighbours come back as documents about declines in
+general: the friendly overview page, the troubleshooting FAQ, three paragraphs
+about card issues. The one page in the knowledge base that defines `DECLINE_51`
+and its specific remediation may not crack the top ten, because nothing about it
+is semantically distinctive beyond a code the encoder never learned.
+
+The same happens with exact fee labels. "Cross-border assessment fee" and
+"international transaction fee" are near-identical vectors and materially
+different line items. A user asking about one and being answered about the other
+has been misinformed about what they were charged. In a regulated product that is
+not a quality issue, it is a disclosure issue.
+
+The pattern is consistent: **semantic similarity is weakest precisely where
+precision matters most** — codes, identifiers, statuses, product names, fee
+labels, anything that is a proper noun rather than a concept.
+
+## Hybrid retrieval, and what fusing actually means
+
+The fix is not exotic. Run lexical retrieval — BM25, or plain inverted-index
+keyword search — alongside the vector search, and fuse the two result sets.
+
+Lexical search is very good at the things embeddings are bad at. `DECLINE_51`
+appears in one document and nowhere else; a term-frequency scorer will rank that
+document first and be confident about it. Conversely, "why did my payment not go
+through" has no useful keywords at all, and the vector side carries it.
+
+Two things matter in the fusion step:
+
+- **Fuse on rank, not on score.** BM25 scores and cosine similarities are not on
+  the same scale and are not comparable across queries. Reciprocal rank fusion —
+  score each document by `1 / (k + rank)` in each list and sum — sidesteps the
+  calibration problem entirely and is about six lines of code.
+- **Retrieve wide, then narrow.** Pull a generous candidate set from both sides,
+  fuse, then rerank the merged list. The retrieval stage's job is recall; the
+  reranker's job is precision. Conflating them means tuning one knob against two
+  objectives and losing both.
+
+Chunking deserves a mention here too. If a fee table is split mid-row, no
+retrieval strategy recovers it. Chunk on document structure — headings, table
+boundaries, list items — not on a fixed token count, and keep the parent heading
+in each chunk's text so the lexical index has something to match on.
+
+## "I don't know" is an answer, not a failure
+
+The harder half of the problem is not retrieval. It is what happens when
+retrieval genuinely has nothing.
+
+An LLM handed a prompt that says "answer the question using this context" will
+answer. If the context is off-topic, it will synthesise something plausible from
+whatever is adjacent plus its parametric knowledge, and it will do it in the same
+confident register it uses when it is right. There is no tonal signal that
+distinguishes a grounded answer from an invented one. In a support context, an
+invented fee, an invented processing window, or an invented compliance
+requirement is worse than silence — silence routes to a human, and the invention
+does not.
+
+So abstention has to be designed in, not hoped for:
+
+- **Gate on retrieval quality before generation.** If the top fused result is
+  below a score threshold, do not call the model at all. Return the escalation
+  path.
+- **Make refusal an explicit, permitted output** in the prompt, with the
+  condition stated plainly: if the context does not contain the answer, say so
+  and hand off. Models comply with this far more reliably when abstention is a
+  named option than when it is merely not forbidden.
+- **Require citations, then verify them.** If the answer references a chunk that
+  was not in the retrieved set, discard the answer. This is a cheap post-hoc
+  check that catches a real class of fabrication.
+- **Log every abstention.** They are the most useful signal you have — each one
+  is either a knowledge-base gap or a retrieval bug, and both are fixable.
+
+The instinct is to treat abstention rate as a metric to minimise. It is not. A
+system that answers everything is a system with no floor on how wrong it can be.
+The number worth tracking is how often a confident answer turns out to be
+ungrounded — and the way to keep that near zero is to let the assistant say it
+doesn't know, early and often.

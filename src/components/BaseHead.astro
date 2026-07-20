@@ -51,7 +51,6 @@ const jsonLd = {
       },
       worksFor: [
         { '@type': 'Organization', name: 'Hizo Africa' },
-        { '@type': 'Organization', name: 'Dantown' },
       ],
       mainEntityOfPage: { '@id': `${SITE.url}/` },
     },
@@ -71,7 +70,14 @@ const jsonLd = {
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Icons. The SVG is the primary mark (a solid dark tile so it survives both
+     light and dark browser chrome); the PNGs are raster fallbacks. -->
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#0b0f14" />
 <meta name="generator" content={Astro.generator} />
 
 <title>{pageTitle}</title>

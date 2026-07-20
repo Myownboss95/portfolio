@@ -1,0 +1,110 @@
+---
+title: "MCP vs. Bespoke Tool Integrations: When to Switch"
+description: "Hand-rolled tool definitions are correct for one assistant and wrong for three. A direct comparison of MCP against per-agent integrations, and the point where the tradeoff flips."
+pubDate: 2026-06-30
+tags: ["MCP", "Agents", "LLM", "Architecture"]
+draft: false
+---
+
+For a single assistant, writing tool definitions by hand is the right call.
+Adding a protocol layer to expose four internal endpoints to one consumer is
+architecture for its own sake, and you should not do it.
+
+The argument for the Model Context Protocol only becomes real at the second and
+third consumer. That is a boring claim, but the reason it is true is more
+specific than "reuse is good," and worth spelling out.
+
+## What actually duplicates
+
+Copying a tool definition looks cheap because the JSON schema is short. The
+schema is not the artefact. Around every tool call sits a set of decisions:
+
+- how the internal API is authenticated, and as *whom*
+- which fields are redacted before the result enters the context window
+- what the timeout is, and what a timeout returns to the model
+- whether the operation is a read or a write, and whether it needs approval
+- what gets written to the audit log, in what format
+- how errors are phrased so the model does something sensible with them
+
+Every one of those is a judgement call, and every one drifts. Three assistants
+built at three different times have three different opinions about whether the
+transaction lookup returns the full PAN. Two of them are probably wrong, and
+nobody knows which two without reading all three codebases.
+
+## Side by side
+
+```
+BESPOKE                             MCP SERVER
+┌──────────┐  ┌──────────┐          ┌──────────┐  ┌──────────┐
+│ support  │  │ ops      │          │ support  │  │ ops      │
+│ agent    │  │ agent    │          │ agent    │  │ agent    │
+└────┬─────┘  └────┬─────┘          └────┬─────┘  └────┬─────┘
+     │ own auth    │ own auth            └──────┬──────┘
+     │ own redact  │ own redact                 │  one contract
+     ▼             ▼                            ▼
+┌─────────────────────────┐          ┌─────────────────────────┐
+│  internal APIs          │          │  MCP server             │
+└─────────────────────────┘          │  auth · redact · audit  │
+                                     └───────────┬─────────────┘
+                                                 ▼
+                                     ┌─────────────────────────┐
+                                     │  internal APIs          │
+                                     └─────────────────────────┘
+```
+
+| | Bespoke per agent | Shared MCP server |
+| --- | --- | --- |
+| Time to first tool | Minutes | A day or two of scaffolding |
+| Cost of internal API change | N edits, N deploys | One edit |
+| "What can our agents do?" | Read N codebases | Read one manifest |
+| Permission model | Per agent, divergent | Per tool, central |
+| Audit trail | N formats | One format |
+| Failure blast radius | One agent | Every agent |
+| Local iteration speed | Fast | Slower — a hop away |
+
+The last two rows are the honest cost. A shared tool layer is a shared point of
+failure and a shared release cadence. Break the transaction-lookup tool and you
+break everything at once, where the bespoke version would have broken one
+assistant. You are trading N small independent risks for one large correlated
+one, and that is only a good trade if you invest in the shared layer accordingly:
+contract tests, versioned tool schemas, staged rollout.
+
+## The part that isn't about reuse
+
+There is a second argument that I think matters more, and it is a security
+argument.
+
+Once tools live behind one server, "what are our agents permitted to do?" becomes
+a question with a single answer, expressed as data rather than inferred from
+code. You can enumerate the tools. You can attach a permission to each one. You
+can require that every write-class tool carries an approval hook, and *enforce it
+at the boundary* rather than trusting each assistant's author to remember.
+
+That is not achievable with copied definitions, no matter how disciplined the
+team is, because the enforcement point does not exist. There is no place to put
+the check. This is the same reason payment systems centralise authorisation
+instead of asking each product surface to validate limits — not because it is
+less code, but because a rule you cannot enforce in one place is a rule you do
+not have. The [MCP server](/work/mcp-tool-server) I built exists mostly for this
+reason; the deduplication was a pleasant side effect.
+
+## The switch point
+
+Concretely, I'd migrate when any of these is true:
+
+1. **A second consumer wants the same underlying system.** Not the same tool —
+   the same system. Two agents reading transactions differently is the drift
+   starting.
+2. **You cannot answer the permissions question from memory.** If enumerating
+   agent capabilities requires a code search, the surface is already unmanaged.
+3. **An internal API is about to change** and you are counting the call sites.
+
+And I would not migrate for: one assistant, a prototype, or tools that are
+genuinely single-purpose and will never be reused. A weather lookup in a demo
+does not need a protocol.
+
+The general shape of this is old. MCP is a schema-and-transport convention for
+agent tool calls, and its value is the same as any interface boundary — it moves
+cross-cutting concerns to a place where they can be implemented once and
+verified. The reason to adopt it is not that it is new. It is that agents
+multiply faster than integration code can be kept honest.

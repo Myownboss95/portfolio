@@ -7,18 +7,21 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
 ---
 
 <header class="sticky top-0 z-40 border-b border-app bg-app/80 backdrop-blur">
-  <nav class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-    <a href="/" class="font-mono text-sm font-semibold tracking-tight text-main">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-5">
+    <a
+      href="/"
+      class="shrink-0 font-mono text-[13px] font-semibold tracking-tight text-main sm:text-sm"
+    >
       daniel<span class="text-accent">.</span>odiachi
     </a>
 
-    <div class="flex items-center gap-1 sm:gap-2">
+    <div class="flex items-center gap-0.5 sm:gap-2">
       {
         NAV.map((item) => (
           <a
             href={item.href}
             class:list={[
-              'rounded-md px-3 py-1.5 text-sm transition hover:text-accent',
+              'rounded-md px-1.5 py-1.5 text-[13px] transition hover:text-accent sm:px-3 sm:text-sm',
               isActive(item.href) ? 'text-accent' : 'text-muted',
             ]}
           >
@@ -32,7 +35,29 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
       >
         Résumé
       </a>
+      <button
+        type="button"
+        data-cmdk-open
+        aria-label="Open command palette (Command K)"
+        class="cmdk-trigger h-9 items-center gap-1.5 rounded-md border border-app px-2.5 font-mono text-xs text-faint transition hover:border-accent hover:text-accent"
+      >
+        <span aria-hidden="true">⌘K</span>
+      </button>
       <ThemeToggle />
     </div>
   </nav>
 </header>
+
+<style>
+  /* The palette is JS-only, so the trigger stays hidden until its script has
+     registered the handler. Also reserved for wider screens — the nav is tight
+     on mobile and the shortcut isn't reachable there anyway. */
+  .cmdk-trigger {
+    display: none;
+  }
+  @media (min-width: 640px) {
+    :global(html[data-cmdk-ready]) .cmdk-trigger {
+      display: inline-flex;
+    }
+  }
+</style>

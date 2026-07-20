@@ -28,4 +28,20 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { projects };
+// "blog" = your writing. Each post is one MDX file in src/content/blog/.
+// Same CMS contract idea as above: the schema is enforced at build time, and the
+// `[^_]` in the glob means files starting with "_" (the template) never publish.
+const blog = defineCollection({
+  loader: glob({ pattern: '**/[^_]*.mdx', base: './src/content/blog' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(), // one-to-two sentences, shown on /blog and in RSS
+    pubDate: z.coerce.date(), // "2026-07-20" is fine — coerced to a Date
+    updatedDate: z.coerce.date().optional(), // set when you materially revise a post
+    tags: z.array(z.string()).default([]), // e.g. ["RAG", "LLM"]
+    draft: z.boolean().default(false), // true = visible in `npm run dev`, hidden in production
+    cover: z.string().optional(),
+  }),
+});
+
+export const collections = { projects, blog };
