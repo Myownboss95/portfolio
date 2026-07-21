@@ -138,3 +138,22 @@ public/                       # static files (résumé PDF, favicon, images)
 Hosted on Cloudflare (Workers static assets via `wrangler.jsonc`).
 Push to `main` → Cloudflare builds (`npm run build`) and deploys `dist/` automatically.
 No manual step.
+
+---
+
+## 📄 Using this code
+
+**The code is MIT. The person is not.**
+
+You're welcome to fork the shell — components, layouts, styling — and build your
+own portfolio from it. No attribution required.
+
+What you may **not** take is the content that makes this *mine*: the case
+studies and blog posts (`src/content/`), the experience and product data
+(`src/data/`), the portrait, the website screenshots, the CV, and my name,
+likeness and employment history wherever they appear.
+
+So: delete `src/content/` and `src/data/`, swap the images and the PDF in
+`public/`, put your own details in `src/consts.ts` — then it's yours.
+
+Full terms in [LICENSE](LICENSE).
