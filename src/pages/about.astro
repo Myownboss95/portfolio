@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ExperienceItem from '../components/ExperienceItem.astro';
 import SocialIcon from '../components/SocialIcon.astro';
+import StartProjectCTA from '../components/StartProjectCTA.astro';
 import { SITE, SOCIALS } from '../consts';
 // Shared with the homepage's "Professional Journey" section — one source of truth.
 import { experience } from '../data/experience';
@@ -99,6 +100,8 @@ import { experience } from '../data/experience';
         <p class="text-sm text-muted">Compunet Technologies · 2018</p>
       </div>
     </div>
+
+    <StartProjectCTA class="mt-16" />
   </section>
 
   <style>

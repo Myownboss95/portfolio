@@ -17,6 +17,7 @@ no login — it's all files in this repo.
 | Add a **Web / WordPress site**      | `src/data/sites.ts`                          |
 | Change my **name, email, socials**  | `src/consts.ts`                              |
 | Turn on the **contact form**        | `src/pages/contact.astro` (Web3Forms key)    |
+| Change **website prices / questions** | `src/data/brief.ts` (see [Start a project](#start-a-project)) |
 | Edit the **About / Contact** copy   | `src/pages/about.astro`, `contact.astro`     |
 | Edit the **homepage** copy          | `src/pages/index.astro`                      |
 | Swap the **CV / résumé PDF**        | replace `public/Daniel-Odiachi-CV.pdf`       |
@@ -226,6 +227,88 @@ that emails you each submission, no backend or server needed.
 - Submissions arrive as email. If a send fails, the form tells the visitor to email
   you directly (`SITE.email` from `consts.ts`).
 - To change the email subject line, edit the hidden `subject` field in the form.
+
+---
+
+## 6b. "Start a project" — the website brief {#start-a-project}
+
+`/start-a-project` is a 7-step brief for website clients (company, e-commerce,
+church, NGO). It shows a live price estimate, takes photo/logo uploads, saves
+progress in the visitor's browser, and on submit emails **you** the full brief
+and the **client** a styled copy (if they gave an email). It's linked from the
+homepage, hero, /work, /contact, /about, /blog, the 404 page, the footer, the
+contact dock and ⌘K.
+
+| I want to…                              | Edit this                                 |
+| :-------------------------------------- | :---------------------------------------- |
+| Change a **price**                      | `PRICES` in `src/data/brief.ts`           |
+| Change **questions / options**          | the lists in `src/data/brief.ts`          |
+| Change the **page layout / wording**    | `src/pages/start-a-project.astro`         |
+| Change the **emails**                   | `worker/emails.ts`                        |
+| Change **where briefs are emailed**     | `NOTIFY_EMAIL` in `wrangler.jsonc`        |
+
+Prices are `[min, max]` per currency, and naira and dollars are separate lists,
+so you can change one without the other. Each option that costs extra names its
+price with `price: '…'`. The page, the estimate and the emails all read from this
+one file.
+
+### How it works
+
+- **Worker** (`worker/index.ts`) handles `/api/*` and `/files/*`. Every other
+  page is served exactly as before.
+- **Uploads + saved briefs** go to the private R2 bucket `portfolio-briefs`,
+  under `briefs/<id>/`. Your email links to `/files/<id>`, a page showing that
+  client's uploads. The id is random and unguessable.
+- **Emails** are sent through [Resend](https://resend.com). If Resend isn't set
+  up or fails, the brief is still saved in R2. Your notification then goes out
+  through the Web3Forms key (`WEB3FORMS_KEY` in `consts.ts`) as a plain-text
+  email, and the client is told their copy will come on WhatsApp.
+- **No email from the client?** Your copy has a **"Send their copy on WhatsApp"**
+  button. It opens their chat with the summary already typed.
+- **Domain check** asks the .com/.org registries directly. `.ng` addresses can't
+  be checked automatically, so they show "we'll confirm".
+- **Currency:** visitors in Nigeria see ₦ and everyone else sees $. They can switch.
+
+### One-time setup (do this BEFORE the first push with this code)
+
+The deploy needs the bucket to exist, so create it first:
+
+```sh
+npx wrangler login
+npx wrangler r2 bucket create portfolio-briefs
+```
+
+Then set up email:
+
+1. Sign up at https://resend.com → **Domains → Add domain** → `danielodiachi.work`.
+   Add the DNS records it shows in Cloudflare (DNS → Records) and wait for
+   "Verified".
+2. **API Keys → Create** (sending access) and copy the key, then:
+   ```sh
+   npx wrangler secret put RESEND_API_KEY
+   ```
+3. Emails are sent from `projects@danielodiachi.work`, which is `MAIL_FROM` in
+   `wrangler.jsonc`. Client replies go to your inbox.
+
+### Try it locally (with uploads + API)
+
+```sh
+npm run build
+npx wrangler dev        # http://localhost:8787/start-a-project/
+```
+
+`npm run dev` shows the page too, but uploads, the domain check and sending need
+the Worker, so use `wrangler dev` for those. Locally there's no email key, so
+the success screen shows the "WhatsApp me if you don't hear back" note. That's
+expected.
+
+### Caching ("page loads with no styles")
+
+Every page now has its CSS and scripts **inside the HTML**
+(`astro.config.mjs`), and `public/_headers` tells browsers to re-check pages on
+every visit. A page can't load half-styled from an old cache after a deploy. If
+it ever still happens, check Cloudflare → Caching → Configuration →
+**Browser Cache TTL** is set to **"Respect Existing Headers"**.
 
 ---
 

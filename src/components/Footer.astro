@@ -2,6 +2,7 @@
 import { SITE, SOCIALS } from '../consts';
 import SocialIcon from './SocialIcon.astro';
 const year = 2026; // build-time constant; bump if needed
+const onBrief = Astro.url.pathname.startsWith('/start-a-project');
 ---
 
 <footer class="border-t border-app bg-soft">
@@ -9,6 +10,11 @@ const year = 2026; // build-time constant; bump if needed
     <div>
       <p class="font-mono text-sm text-main">{SITE.name}</p>
       <p class="text-sm text-faint">{SITE.tagline}</p>
+      {!onBrief && (
+        <a href="/start-a-project" class="mt-2 inline-block text-sm text-accent hover:underline">
+          Need a website? Start a project →
+        </a>
+      )}
     </div>
     <!-- Icon-only row: the visible label is gone, so each link carries an
          aria-label and the glyph itself is aria-hidden. -->

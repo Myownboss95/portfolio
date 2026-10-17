@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import StartProjectCTA from '../../components/StartProjectCTA.astro';
 
 // Drafts stay visible in `npm run dev` so you can preview a post before it ships,
 // and are dropped from the production build.
@@ -62,5 +63,7 @@ const dateFormat = new Intl.DateTimeFormat('en-GB', {
         </p>
       )
     }
+
+    <StartProjectCTA class="mt-16" />
   </section>
 </BaseLayout>

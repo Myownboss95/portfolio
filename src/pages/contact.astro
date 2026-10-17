@@ -1,14 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SocialIcon from '../components/SocialIcon.astro';
-import { SITE, SOCIALS, STATUS } from '../consts';
+import StartProjectCTA from '../components/StartProjectCTA.astro';
+import { SITE, SOCIALS, STATUS, WEB3FORMS_KEY } from '../consts';
 
 // ── Contact form ─────────────────────────────────────────────────────────────
 // Uses Web3Forms (free, no backend). To activate:
 //   1. Get a free access key at https://web3forms.com (enter your email).
 //   2. Paste it below. Submissions arrive in your inbox — no server required.
 // Until a real key is set, the form is disabled and the email link is the CTA.
-const WEB3FORMS_KEY = 'e854f529-8c39-47bb-a838-12b0d5c3d88c';
+// The key lives in consts.ts (shared with /start-a-project).
 const formEnabled = WEB3FORMS_KEY !== 'YOUR-WEB3FORMS-ACCESS-KEY';
 ---
 
@@ -24,6 +25,8 @@ const formEnabled = WEB3FORMS_KEY !== 'YOUR-WEB3FORMS-ACCESS-KEY';
       Whether it’s LLM/RAG work or the backend systems underneath it, I’d like to hear about it.
       The fastest way to reach me is email — or use the form below.
     </p>
+
+    <StartProjectCTA class="mt-8" />
 
     <!-- Direct links -->
     <!-- Contact page keeps the handle visible — this is where the detail is

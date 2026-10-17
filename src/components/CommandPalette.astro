@@ -20,6 +20,7 @@ type Item = {
 const items: Item[] = [
   { section: 'Pages', title: 'Home', href: '/' },
   ...NAV.map((n) => ({ section: 'Pages' as const, title: n.label, href: n.href })),
+  { section: 'Pages', title: 'Start a website project', href: '/start-a-project', hint: 'Brief + price estimate' },
   ...projects.map((p) => ({
     section: 'Case studies' as const,
     title: p.data.title,

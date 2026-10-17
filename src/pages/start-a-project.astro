@@ -1,0 +1,981 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SOCIALS, WEB3FORMS_KEY } from '../consts';
+import {
+  SITE_TYPES, STAGES, GOALS, EXTRAS, PRODUCT_COUNTS, BRANDING, PHOTOS, COPY,
+  HAS_DOMAIN, BUSINESS_EMAIL, RETAINER, BUDGET_FIT, TIMELINES, INCLUDED,
+  type SiteType,
+} from '../data/brief';
+
+// ── Start a project ──────────────────────────────────────────────────────────
+// A short, stepped brief for website clients (company, e-commerce, church, NGO).
+// Questions, options and prices all live in src/data/brief.ts. Submissions,
+// uploads and the two emails are handled by the Worker in worker/index.ts — see
+// docs/updating-the-site.md → "Start a project" for the one-time setup.
+
+const whatsapp = SOCIALS.find((s) => s.label === 'WhatsApp')!;
+const goalTypes = Object.keys(GOALS) as SiteType[];
+
+const STEPS = [
+  'About you',
+  'Your project',
+  'What you need',
+  'Look & content',
+  'Website address',
+  'Cost & timeline',
+  'Anything else',
+];
+---
+
+<BaseLayout
+  title="Start a project"
+  description="Tell Daniel about the website you need — company, online store, church or NGO — and get an instant cost estimate."
+>
+  <section class="mx-auto max-w-2xl px-5 py-16">
+    <p class="font-mono text-sm text-accent">Websites · Company · E-commerce · Church · NGO</p>
+    <h1 class="mt-3 text-3xl font-bold tracking-tight text-main sm:text-4xl">Start a project</h1>
+    <p class="mt-3 text-lg text-muted">
+      A few quick questions about the website you need. Takes about 3 minutes — and you’ll see
+      an estimated cost before you send it.
+    </p>
+
+    <!-- Returning visitor -->
+    <div data-welcome class="welcome mt-8 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm" hidden>
+      <span class="text-muted">👋 Welcome back, <strong class="text-main" data-welcome-name></strong> — your answers are saved.</span>
+      <button type="button" data-welcome-reset class="text-xs text-faint underline-offset-2 hover:text-accent hover:underline">Start over</button>
+    </div>
+
+    <noscript>
+      <p class="mt-10 rounded-xl border border-app bg-card p-5 text-muted">
+        This form needs JavaScript. You can also message me on
+        <a href={whatsapp.href} class="text-accent hover:underline">WhatsApp</a> and tell me about your project there.
+      </p>
+    </noscript>
+
+    <!-- Progress -->
+    <div id="brief-progress" class="mt-10" aria-live="polite">
+      <div class="flex items-baseline justify-between font-mono text-xs">
+        <span class="text-accent" data-progress-label>Step 1 of {STEPS.length}</span>
+        <span class="text-faint" data-progress-title>{STEPS[0]}</span>
+      </div>
+      <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-soft">
+        <div class="progress-fill h-full rounded-full bg-accent" style={`width:${100 / STEPS.length}%`}></div>
+      </div>
+    </div>
+
+    <form id="brief-form" class="mt-8" novalidate data-backup-key={WEB3FORMS_KEY}>
+      <!-- Spam trap: hidden from people, irresistible to bots. -->
+      <input type="text" name="website_url" class="hidden" style="display:none" tabindex="-1" autocomplete="off" />
+
+      <!-- ── 1. About you ─────────────────────────────────────────────── -->
+      <fieldset data-step="1" class="step space-y-5">
+        <legend class="step-title">About you</legend>
+        <div>
+          <label for="b-name" class="field-label">Your name</label>
+          <input id="b-name" name="name" type="text" required autocomplete="name" class="field" placeholder="e.g. Ada Okafor" />
+        </div>
+        <div>
+          <label for="b-whatsapp" class="field-label">WhatsApp number</label>
+          <input id="b-whatsapp" name="whatsapp" type="tel" required autocomplete="tel" inputmode="tel" pattern="[+0-9 ()\-]{7,20}" class="field" placeholder="e.g. 0803 123 4567" />
+        </div>
+        <div>
+          <label for="b-email" class="field-label">Email <span class="text-faint">(optional)</span></label>
+          <input id="b-email" name="email" type="email" autocomplete="email" class="field" placeholder="you@example.com" />
+          <p class="field-hint">I’ll send a copy of your answers here. No email? No problem — I’ll send it on WhatsApp.</p>
+        </div>
+      </fieldset>
+
+      <!-- ── 2. Your project ──────────────────────────────────────────── -->
+      <fieldset data-step="2" class="step space-y-7" hidden>
+        <legend class="step-title">Your project</legend>
+        <div>
+          <label for="b-org" class="field-label">Business / organisation name</label>
+          <input id="b-org" name="org" type="text" required autocomplete="organization" class="field" placeholder="e.g. Grace Chapel" />
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-type">
+          <p id="q-type" class="field-label">Type of website</p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            {SITE_TYPES.map((o) => (
+              <label class="choice">
+                <input type="radio" name="type" value={o.id} required />
+                <span><span class="choice-label">{o.label}</span><span class="choice-hint">{o.hint}</span></span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-stage">
+          <p id="q-stage" class="field-label">Is this a new website or a redesign?</p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            {STAGES.map((o) => (
+              <label class="choice">
+                <input type="radio" name="stage" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+          <div data-when="stage=redesign" class="mt-3" hidden>
+            <label for="b-current" class="field-label">Your current website</label>
+            <input id="b-current" name="currentUrl" type="text" required inputmode="url" class="field" placeholder="e.g. yourname.com" />
+          </div>
+        </div>
+
+        {goalTypes.map((t) => (
+          <div data-when={`type=${t}`} data-goals hidden>
+            <p class="field-label">What should the website help you do? <span class="text-faint">(tick all that apply)</span></p>
+            <div class="grid gap-2">
+              {GOALS[t].map((o) => (
+                <label class="choice">
+                  <input type="checkbox" name={`goals-${t}`} value={o.id} />
+                  <span class="choice-label">{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </fieldset>
+
+      <!-- ── 3. What you need ─────────────────────────────────────────── -->
+      <fieldset data-step="3" class="step space-y-7" hidden>
+        <legend class="step-title">What you need</legend>
+        <div data-when="type=ecommerce" role="radiogroup" aria-labelledby="q-products" hidden>
+          <p id="q-products" class="field-label">Roughly how many products will you sell?</p>
+          <div class="grid grid-cols-3 gap-2">
+            {PRODUCT_COUNTS.map((o) => (
+              <label class="choice justify-center">
+                <input type="radio" name="products" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p class="field-label">Anything else you’d like on the site? <span class="text-faint">(optional)</span></p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            {EXTRAS.map((o) => (
+              <label class="choice">
+                <input type="checkbox" name="extras" value={o.id} />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- ── 4. Look & content ────────────────────────────────────────── -->
+      <fieldset data-step="4" class="step space-y-7" hidden>
+        <legend class="step-title">Look &amp; content</legend>
+
+        <div role="radiogroup" aria-labelledby="q-branding">
+          <p id="q-branding" class="field-label">Your logo and branding</p>
+          <details class="explainer mb-3">
+            <summary>What’s a brand guide?</summary>
+            <div class="explainer-card" aria-hidden="false">
+              <div class="flex items-end gap-6" aria-hidden="true">
+                <figure class="brand-part">
+                  <span class="brand-logo">G</span>
+                  <figcaption>Logo</figcaption>
+                </figure>
+                <figure class="brand-part">
+                  <span class="flex h-10 items-center gap-1.5">
+                    <span class="swatch" style="background:#1e3a8a"></span>
+                    <span class="swatch" style="background:#f59e0b"></span>
+                    <span class="swatch" style="background:#f8fafc"></span>
+                  </span>
+                  <figcaption>Colours</figcaption>
+                </figure>
+                <figure class="brand-part">
+                  <span class="flex h-10 items-center gap-2 text-2xl text-main">
+                    <span class="font-bold" style="font-family:Georgia,serif">Aa</span><span>Aa</span>
+                  </span>
+                  <figcaption>Fonts</figcaption>
+                </figure>
+              </div>
+              <p class="mt-3 text-sm text-muted">
+                A brand guide is a short document that shows your logo, colours and fonts — and how to use
+                them — so your website, flyers and social media all look like the same organisation.
+              </p>
+            </div>
+          </details>
+          <div class="grid gap-2">
+            {BRANDING.map((o) => (
+              <label class="choice">
+                <input type="radio" name="branding" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+          <div data-when="branding=have-both,have-logo" class="mt-3" hidden>
+            <div class="upload" data-upload="brand" data-max="5" data-accept="image/*,.pdf,.svg">
+              <p class="text-sm font-medium text-main">Upload your logo or brand guide <span class="font-normal text-faint">(optional)</span></p>
+              <p class="field-hint mt-0.5">Images or PDF, up to 5 files.</p>
+            </div>
+          </div>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-photos">
+          <p id="q-photos" class="field-label">Do you have photos for the site?</p>
+          <div class="grid grid-cols-3 gap-2">
+            {PHOTOS.map((o) => (
+              <label class="choice justify-center">
+                <input type="radio" name="photos" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+          <div data-when="photos=yes,some" class="mt-3 space-y-3" hidden>
+            <div class="upload" data-upload="photos" data-max="15" data-accept="image/*">
+              <p class="text-sm font-medium text-main">Upload your photos <span class="font-normal text-faint">(optional)</span></p>
+              <p class="field-hint mt-0.5">Up to 15 photos. They’re resized on your phone first, so uploads are quick.</p>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-muted">
+              <input type="checkbox" name="photosLater" value="yes" class="accent-[var(--accent)]" />
+              I’ll send them on WhatsApp later
+            </label>
+          </div>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-copy">
+          <p id="q-copy" class="field-label">Who will write the text on the site?</p>
+          <div class="grid gap-2 sm:grid-cols-3">
+            {COPY.map((o) => (
+              <label class="choice">
+                <input type="radio" name="copy" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label for="b-inspo" class="field-label">Any website you like the look of? <span class="text-faint">(optional)</span></label>
+          <input id="b-inspo" name="inspiration" type="text" inputmode="url" class="field" placeholder="Paste a link" />
+        </div>
+      </fieldset>
+
+      <!-- ── 5. Website address ───────────────────────────────────────── -->
+      <fieldset data-step="5" class="step space-y-7" hidden>
+        <legend class="step-title">Website address</legend>
+
+        <p class="note">
+          <span class="text-accent">✓</span> Hosting is included — I host every site I build.
+        </p>
+
+        <div data-when="stage=redesign" hidden>
+          <p class="text-sm text-muted">We’ll keep your current address: <strong class="text-main" data-echo="currentUrl"></strong></p>
+        </div>
+
+        <div data-when="stage=new" hidden>
+          <div role="radiogroup" aria-labelledby="q-domain">
+            <p id="q-domain" class="field-label">Do you already have a website address?</p>
+            <p class="field-hint -mt-1 mb-2">Your website’s address is what people type to find you — like <span class="font-mono">www.yourname.com</span>.</p>
+            <div class="grid grid-cols-3 gap-2">
+              {HAS_DOMAIN.map((o) => (
+                <label class="choice justify-center">
+                  <input type="radio" name="hasDomain" value={o.id} required />
+                  <span class="choice-label">{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div data-when="hasDomain=yes" class="mt-4" hidden>
+            <label for="b-domain-owned" class="field-label">What is it?</label>
+            <input id="b-domain-owned" name="domainOwned" type="text" required inputmode="url" class="field" placeholder="e.g. yourname.com" />
+          </div>
+
+          <div data-when="hasDomain=no,unsure" class="mt-4" hidden>
+            <label for="b-domain-wanted" class="field-label">What would you like it to be?</label>
+            <p class="field-hint -mt-1 mb-2">Tap a suggestion or type your own.</p>
+            <div class="mb-3 flex flex-wrap gap-2" data-domain-suggestions></div>
+            <input id="b-domain-wanted" name="domainWanted" type="text" inputmode="url" class="field" placeholder="e.g. yourname.org" />
+            <p class="mt-2 hidden text-sm" data-domain-status aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-bizmail">
+          <p id="q-bizmail" class="field-label">Do you want a business email?</p>
+          <p class="field-hint -mt-1 mb-2">An email on your own address, like <span class="font-mono" data-email-example>info@yourname.com</span>.</p>
+          <div class="grid grid-cols-3 gap-2">
+            {BUSINESS_EMAIL.map((o) => (
+              <label class="choice justify-center text-center">
+                <input type="radio" name="businessEmail" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-retainer">
+          <p id="q-retainer" class="field-label">After launch, would you like me to manage the site for you?</p>
+          <p class="field-hint -mt-1 mb-2">A monthly retainer covering updates, backups, security and small fixes — the cost is something we agree on together.</p>
+          <div class="grid grid-cols-3 gap-2">
+            {RETAINER.map((o) => (
+              <label class="choice justify-center text-center">
+                <input type="radio" name="retainer" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- ── 6. Cost & timeline ───────────────────────────────────────── -->
+      <fieldset data-step="6" class="step space-y-7" hidden>
+        <legend class="step-title">Cost &amp; timeline</legend>
+
+        <div class="estimate rounded-xl border p-5">
+          <div class="flex items-center justify-between gap-3">
+            <p class="font-mono text-xs uppercase tracking-wider text-accent">Your estimated cost</p>
+            <div class="currency flex rounded-md border border-app p-0.5 font-mono text-xs" role="group" aria-label="Currency">
+              <button type="button" data-currency="NGN">₦ NGN</button>
+              <button type="button" data-currency="USD">$ USD</button>
+            </div>
+          </div>
+          <p class="mt-2 text-3xl font-bold tracking-tight text-main sm:text-4xl" data-estimate-range></p>
+          <p class="mt-1 text-sm text-faint">Based on what you picked. Your final quote comes after a short call.</p>
+
+          <details class="mt-4 text-sm">
+            <summary class="cursor-pointer text-muted hover:text-accent">What’s in this estimate</summary>
+            <ul class="mt-2 divide-y divide-[var(--border)]" data-estimate-lines></ul>
+          </details>
+
+          <p class="mt-4 font-mono text-[10px] uppercase tracking-wider text-faint">Always included</p>
+          <ul class="mt-1.5 flex flex-wrap gap-1.5" role="list">
+            {INCLUDED.map((i) => <li class="chip">✓ {i}</li>)}
+          </ul>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-fit">
+          <p id="q-fit" class="field-label">Does this fit your budget?</p>
+          <div class="grid gap-2 sm:grid-cols-3">
+            {BUDGET_FIT.map((o) => (
+              <label class="choice">
+                <input type="radio" name="budgetFit" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+          <div data-when="budgetFit=high" class="mt-3" hidden>
+            <label for="b-budget" class="field-label">What budget did you have in mind? <span class="text-faint">(optional)</span></label>
+            <input id="b-budget" name="budgetNote" type="text" class="field" placeholder="e.g. ₦300,000" />
+          </div>
+        </div>
+
+        <div role="radiogroup" aria-labelledby="q-timeline">
+          <p id="q-timeline" class="field-label">When do you need the site live?</p>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {TIMELINES.map((o) => (
+              <label class="choice justify-center text-center">
+                <input type="radio" name="timeline" value={o.id} required />
+                <span class="choice-label">{o.label}</span>
+              </label>
+            ))}
+          </div>
+          <label for="b-deadline" class="field-label mt-3">Is there a specific date or event? <span class="text-faint">(optional)</span></label>
+          <input id="b-deadline" name="deadline" type="text" class="field" placeholder="e.g. Church anniversary, 12 December" />
+        </div>
+      </fieldset>
+
+      <!-- ── 7. Anything else ─────────────────────────────────────────── -->
+      <fieldset data-step="7" class="step space-y-5" hidden>
+        <legend class="step-title">Anything else</legend>
+        <div>
+          <label for="b-notes" class="field-label">Anything else I should know? <span class="text-faint">(optional)</span></label>
+          <textarea id="b-notes" name="notes" rows="5" class="field" placeholder="Ideas, questions, things you’ve seen elsewhere…"></textarea>
+        </div>
+        <p class="text-sm text-faint">
+          When you send this, you’ll get a copy <span data-copy-via>by email</span> and I’ll reach out on WhatsApp within 24 hours.
+        </p>
+      </fieldset>
+
+      <!-- Navigation -->
+      <div class="mt-10 flex items-center justify-between gap-3 border-t border-app pt-6">
+        <button type="button" data-back class="rounded-lg px-4 py-2.5 text-sm font-medium text-muted transition hover:text-accent" hidden>
+          ← Back
+        </button>
+        <span></span>
+        <button type="button" data-next class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#06140f] transition hover:opacity-90">
+          Continue →
+        </button>
+        <button type="submit" data-submit class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#06140f] transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60" hidden>
+          Send my brief
+        </button>
+      </div>
+      <p class="mt-3 hidden text-sm" data-form-status role="status"></p>
+      <p class="mt-6 text-center">
+        <button type="button" data-reset class="text-xs text-faint underline-offset-2 hover:text-accent hover:underline">Start over</button>
+      </p>
+    </form>
+
+    <!-- Done -->
+    <div id="brief-done" class="mt-10 rounded-xl border border-app bg-card p-6 text-center sm:p-8" hidden>
+      <svg class="done-check mx-auto" viewBox="0 0 52 52" width="64" height="64" aria-hidden="true">
+        <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="2.5" />
+        <path d="M15 27l7 7 15-15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <p class="mt-4 font-mono text-sm text-accent">Brief sent</p>
+      <h2 class="mt-1 text-2xl font-bold text-main">Thank you — I’ve got it.</h2>
+      <p class="mx-auto mt-2 max-w-md text-muted">
+        <span data-done-has-email>A copy of your answers is on its way to <strong class="text-main" data-done-email></strong>.</span><span data-done-no-email hidden>I’ll send you a copy of your answers on WhatsApp.</span>{' '}
+        I’ll reach out on WhatsApp within 24 hours.
+      </p>
+      <p class="mx-auto mt-2 max-w-md text-sm text-muted" data-done-warn hidden>
+        If you don’t hear from me by then, please send me a quick message on WhatsApp.
+      </p>
+      <a href={whatsapp.href} target="_blank" rel="noopener noreferrer" class="mt-5 inline-flex rounded-lg border border-app px-4 py-2 text-sm font-medium text-main transition hover:border-accent hover:text-accent">
+        Chat on WhatsApp
+      </a>
+    </div>
+  </section>
+
+  <style>
+    .step {
+      border: 0;
+      padding: 0;
+      margin: 0;
+      min-width: 0;
+    }
+    .step-title {
+      margin-bottom: 1.25rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .field-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .field-hint {
+      margin-top: 0.375rem;
+      font-size: 0.8125rem;
+      color: var(--text-faint);
+    }
+    .field {
+      width: 100%;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      padding: 0.625rem 0.75rem;
+      color: var(--text);
+    }
+    .field::placeholder {
+      color: var(--text-faint);
+    }
+    .field:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+    .field[aria-invalid='true'] {
+      border-color: #f87171;
+    }
+
+    /* Tap-to-pick option cards. The real input stays in the card for a11y. */
+    .choice {
+      display: flex;
+      cursor: pointer;
+      align-items: center;
+      gap: 0.75rem;
+      border-radius: 0.625rem;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      padding: 0.75rem 0.875rem;
+      transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease;
+    }
+    .choice:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    }
+    .choice:has(input:checked) {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+    }
+    .choice:has(input:focus-visible) {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    /* The native input stays focusable and announced, but is drawn by ::before. */
+    .choice {
+      position: relative;
+    }
+    .choice input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .choice:not(.justify-center)::before {
+      content: '';
+      flex-shrink: 0;
+      height: 1.125rem;
+      width: 1.125rem;
+      border-radius: 9999px;
+      border: 1.5px solid var(--text-faint);
+      background: transparent center / 0 no-repeat;
+      transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        background-size 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+    }
+    .choice:has(input[type='checkbox'])::before {
+      border-radius: 0.3rem;
+    }
+    .choice:not(.justify-center):has(input:checked)::before {
+      border-color: var(--accent);
+      background-color: var(--accent);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-6.5' fill='none' stroke='%2306140f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-size: 78%;
+    }
+    .choice.justify-center:has(input:checked) .choice-label {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .choice > span {
+      display: flex;
+      flex-direction: column;
+    }
+    .choice-label {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .choice-hint {
+      font-size: 0.8rem;
+      color: var(--text-faint);
+    }
+    .choice.invalid {
+      border-color: #f87171;
+    }
+
+    .explainer summary {
+      display: inline-block;
+      cursor: pointer;
+      font-size: 0.8125rem;
+      color: var(--accent);
+    }
+    .explainer summary::-webkit-details-marker {
+      display: none;
+    }
+    .explainer summary::before {
+      content: 'ⓘ ';
+    }
+    .explainer-card {
+      margin-top: 0.5rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      padding: 1rem;
+    }
+    .brand-logo {
+      display: grid;
+      height: 2.5rem;
+      width: 2.5rem;
+      place-items: center;
+      border-radius: 0.6rem;
+      background: #1e3a8a;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+    .brand-part {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0;
+    }
+    .brand-part figcaption {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .swatch {
+      height: 1.25rem;
+      width: 1.25rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+    }
+
+    .note {
+      border-radius: 0.625rem;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      background: color-mix(in srgb, var(--accent) 7%, var(--bg-card));
+      padding: 0.625rem 0.875rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .upload {
+      border-radius: 0.625rem;
+      border: 1px dashed var(--border);
+      background: var(--bg-soft);
+      padding: 0.875rem;
+    }
+
+    .estimate {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+      background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+    }
+    .currency button {
+      border-radius: 0.3rem;
+      padding: 0.25rem 0.5rem;
+      color: var(--text-muted);
+    }
+    .currency button[aria-pressed='true'] {
+      background: var(--accent);
+      color: #06140f;
+    }
+    .chip {
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      padding: 0.125rem 0.625rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .progress-fill {
+      transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+      background-image: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #a7f3d0));
+    }
+
+    .welcome {
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      background: color-mix(in srgb, var(--accent) 7%, var(--bg-card));
+      animation: rise 0.4s ease-out both;
+    }
+
+    /* Domain suggestions — the dot turns green/red once the lookup lands. */
+    :global(.domain-chip) {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text);
+      transition:
+        border-color 0.15s ease,
+        transform 0.15s ease;
+      animation-delay: calc(var(--i, 0) * 60ms);
+    }
+    :global(.domain-chip:hover) {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    :global(.domain-chip .dot) {
+      height: 0.45rem;
+      width: 0.45rem;
+      border-radius: 9999px;
+      background: var(--text-faint);
+      animation: blink 1s ease-in-out infinite;
+    }
+    :global(.domain-chip[data-status] .dot) {
+      animation: none;
+    }
+    :global(.domain-chip[data-status='available'] .dot) {
+      background: var(--accent);
+    }
+    :global(.domain-chip[data-status='taken'] .dot) {
+      background: #fbbf24;
+    }
+
+    /* Uploads */
+    :global(.dropzone) {
+      display: flex;
+      cursor: pointer;
+      align-items: center;
+      gap: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--border));
+      padding: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+    }
+    :global(.dropzone:hover),
+    :global(.dropzone.is-over),
+    :global(.dropzone:focus-within) {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+    }
+    :global(.dropzone-icon) {
+      display: grid;
+      height: 2rem;
+      width: 2rem;
+      place-items: center;
+      border-radius: 0.5rem;
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: var(--accent);
+      font-size: 1.1rem;
+      transition: transform 0.2s ease;
+    }
+    :global(.dropzone:hover .dropzone-icon) {
+      transform: rotate(90deg);
+    }
+    :global(.thumbs) {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    :global(.thumbs:empty) {
+      display: none;
+    }
+    :global(.thumb) {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+    }
+    :global(.thumb-media),
+    :global(.thumb-media img) {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+    :global(.thumb-file) {
+      display: grid;
+      height: 100%;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+    }
+    :global(.thumb-bar) {
+      position: absolute;
+      inset: auto 0.35rem 0.35rem;
+      height: 0.25rem;
+      overflow: hidden;
+      border-radius: 9999px;
+      background: rgb(0 0 0 / 0.45);
+      opacity: 0;
+    }
+    :global(.thumb-bar span) {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+    :global(.thumb.is-uploading .thumb-media) {
+      opacity: 0.55;
+    }
+    :global(.thumb.is-uploading .thumb-bar) {
+      opacity: 1;
+    }
+    :global(.thumb.is-done::after) {
+      content: '✓';
+      position: absolute;
+      top: 0.3rem;
+      left: 0.3rem;
+      display: grid;
+      height: 1.1rem;
+      width: 1.1rem;
+      place-items: center;
+      border-radius: 9999px;
+      background: var(--accent);
+      color: #06140f;
+      font-size: 0.65rem;
+      font-weight: 700;
+      animation: pop 0.3s ease-out;
+    }
+    :global(.thumb.is-failed) {
+      border-color: #f87171;
+    }
+    :global(.thumb.is-failed .thumb-media) {
+      opacity: 0.35;
+    }
+    :global(.thumb.is-leaving) {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    :global(.thumb-remove) {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.25rem;
+      display: grid;
+      height: 1.4rem;
+      width: 1.4rem;
+      place-items: center;
+      border-radius: 9999px;
+      background: rgb(0 0 0 / 0.6);
+      color: #fff;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+
+    /* Submit spinner */
+    [data-submit].is-busy::after {
+      content: '';
+      display: inline-block;
+      margin-left: 0.5rem;
+      height: 0.8rem;
+      width: 0.8rem;
+      vertical-align: -0.1rem;
+      border-radius: 9999px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      animation: spin 0.7s linear infinite;
+    }
+    [data-next]:hover {
+      transform: translateX(2px);
+    }
+    [data-next],
+    [data-back] {
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease,
+        color 0.15s ease;
+    }
+
+    .done-check {
+      color: var(--accent);
+    }
+    .done-check circle {
+      stroke-dasharray: 151;
+      stroke-dashoffset: 151;
+    }
+    .done-check path {
+      stroke-dasharray: 36;
+      stroke-dashoffset: 36;
+    }
+    :global(#brief-done.done-in) .done-check circle {
+      animation: draw 0.6s ease-out forwards;
+    }
+    :global(#brief-done.done-in) .done-check path {
+      animation: draw 0.35s 0.5s ease-out forwards;
+    }
+
+    /* ── Motion ─────────────────────────────────────────────────────────
+       All one-shot classes are added by brief-form.ts and removed on
+       animationend. The global reduced-motion rule in global.css shrinks
+       every duration to ~0, so these all degrade to instant. */
+    :global(.step-in-fwd) {
+      animation: in-fwd 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    :global(.step-in-back) {
+      animation: in-back 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    :global(.is-entering) {
+      animation: rise 0.32s ease-out both;
+    }
+    :global(.pop) {
+      animation: pop 0.28s ease-out;
+    }
+    :global(.shake) {
+      animation: shake 0.4s ease-in-out;
+    }
+    :global(.done-in) {
+      animation: rise 0.5s ease-out both;
+    }
+    .estimate {
+      animation: glow 3s ease-in-out infinite;
+    }
+
+    @keyframes in-fwd {
+      from {
+        opacity: 0;
+        transform: translateX(28px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes in-back {
+      from {
+        opacity: 0;
+        transform: translateX(-28px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes pop {
+      0% {
+        transform: scale(1);
+      }
+      45% {
+        transform: scale(1.03);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    @keyframes shake {
+      20%,
+      60% {
+        transform: translateX(-6px);
+      }
+      40%,
+      80% {
+        transform: translateX(6px);
+      }
+    }
+    @keyframes draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes blink {
+      50% {
+        opacity: 0.3;
+      }
+    }
+    @keyframes glow {
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+      }
+      50% {
+        box-shadow: 0 0 32px -6px color-mix(in srgb, var(--accent) 35%, transparent);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .estimate,
+      :global(.domain-chip .dot) {
+        animation: none;
+      }
+      .done-check circle,
+      .done-check path {
+        stroke-dashoffset: 0;
+      }
+    }
+  </style>
+
+  <script>
+    import { initBriefForm } from '../scripts/brief-form';
+    initBriefForm();
+  </script>
+</BaseLayout>

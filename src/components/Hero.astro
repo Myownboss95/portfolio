@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import portrait from '../assets/daniel-portrait.jpg';
 import SocialIcon from './SocialIcon.astro';
+import StartProjectCTA from './StartProjectCTA.astro';
 import { SITE, STATUS, SOCIALS } from '../consts';
 
 // Rotating job titles. Every one has to be defensible — this is the first line
@@ -162,6 +163,8 @@ const META = [
         View my work
       </a>
     </div>
+
+    <StartProjectCTA variant="link" class="mt-6" />
   </div>
 </section>
 

@@ -43,6 +43,11 @@ export const SOCIALS = [
   { label: 'Phone', href: 'tel:+2348131886973', handle: '+234 813 188 6973' },
 ] as const;
 
+// Web3Forms access key — public by design (it only allows sending to Daniel's
+// inbox). Used by the /contact form, and as the backup notifier for
+// /start-a-project when the Worker can't send email.
+export const WEB3FORMS_KEY: string = 'e854f529-8c39-47bb-a838-12b0d5c3d88c';
+
 export const NAV = [
   { label: 'Work', href: '/work' },
   { label: 'Blog', href: '/blog' },
