@@ -246,6 +246,7 @@ contact dock and ⌘K.
 | Change the **page layout / wording**    | `src/pages/start-a-project.astro`         |
 | Change the **emails**                   | `worker/emails.ts`                        |
 | Change **where briefs are emailed**     | `NOTIFY_EMAIL` in `wrangler.jsonc`        |
+| Change the **address clients reply to** | `REPLY_TO` in `wrangler.jsonc`            |
 
 Prices are `[min, max]` per currency, and naira and dollars are separate lists,
 so you can change one without the other. Each option that costs extra names its

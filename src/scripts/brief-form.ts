@@ -605,7 +605,7 @@ export function initBriefForm() {
         ok?: boolean;
         notified?: boolean;
         clientEmailed?: boolean;
-        backup?: { subject: string; text: string };
+        backup?: { subject: string; fields: [string, string][] };
         error?: string;
       };
       if (!res.ok || !j.ok) throw new Error(j.error || 'Request failed');
@@ -618,8 +618,9 @@ export function initBriefForm() {
         fd.append('access_key', key);
         fd.append('subject', j.backup.subject);
         fd.append('from_name', 'Start a project');
-        fd.append('message', j.backup.text);
-        if (a.email) fd.append('email', a.email);
+        // One field per question, so the email lists them as separate rows.
+        for (const [label, value] of j.backup.fields) fd.append(label, value);
+        if (a.email) fd.append('replyto', a.email);
         notified = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: fd, headers: { Accept: 'application/json' } })
           .then((r) => r.ok)
           .catch(() => false);

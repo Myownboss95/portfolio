@@ -18,7 +18,7 @@ import {
   BRANDING, PHOTOS, COPY, HAS_DOMAIN, BUSINESS_EMAIL, RETAINER, BUDGET_FIT, TIMELINES,
   type BriefAnswers, type Option, type SiteType,
 } from '../src/data/brief';
-import { danielEmail, clientEmail, type Brief, type DomainStatus } from './emails';
+import { danielEmail, clientEmail, briefFields, type Brief, type DomainStatus } from './emails';
 
 // Minimal shapes of the bindings we use — enough for type-checking without
 // pulling in @cloudflare/workers-types.
@@ -51,6 +51,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   MAIL_FROM: string;
   NOTIFY_EMAIL: string;
+  REPLY_TO?: string;
   SITE_URL: string;
   WHATSAPP_URL: string;
 }
@@ -286,7 +287,7 @@ async function handleBrief(request: Request, env: Env): Promise<Response> {
   const toClient = answers.email ? clientEmail(brief, env.SITE_URL, env.WHATSAPP_URL) : null;
   const [notified, clientEmailed] = await Promise.all([
     sendMail(env, { to: env.NOTIFY_EMAIL, ...toDaniel, replyTo: answers.email || undefined }),
-    toClient ? sendMail(env, { to: answers.email, ...toClient, replyTo: env.NOTIFY_EMAIL }) : Promise.resolve(false),
+    toClient ? sendMail(env, { to: answers.email, ...toClient, replyTo: env.REPLY_TO || env.NOTIFY_EMAIL }) : Promise.resolve(false),
   ]);
   if (!notified) console.error('Brief saved but Daniel was not emailed', id);
 
@@ -296,7 +297,7 @@ async function handleBrief(request: Request, env: Env): Promise<Response> {
     ok: true,
     notified,
     clientEmailed,
-    ...(notified ? {} : { backup: { subject: toDaniel.subject, text: toDaniel.text } }),
+    ...(notified ? {} : { backup: { subject: toDaniel.subject, fields: briefFields(brief, env.SITE_URL) } }),
   });
 }
 

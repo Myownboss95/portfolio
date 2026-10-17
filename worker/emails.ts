@@ -40,14 +40,14 @@ const DOMAIN_NOTE: Record<'daniel' | 'client', Record<DomainStatus, string>> = {
   client: { available: 'looks available', taken: 'taken — I’ll suggest alternatives', unknown: 'I’ll confirm availability' },
 };
 
-type Row = [label: string, value: string];
+type Row = [label: string, value: string | string[]];
 type Section = { title: string; rows: Row[] };
 
 /** The answers as labelled sections — shared by both emails and the WhatsApp text. */
 function sections(b: Brief, forClient: boolean): Section[] {
   const a = b.answers;
   const list = (ids: string[], opts: { id: string; label: string }[]) =>
-    ids.map((id) => labelOf(opts, id)).filter(Boolean).join(', ');
+    ids.map((id) => labelOf(opts, id)).filter(Boolean);
   const est = b.estimates[a.currency];
 
   const address =
@@ -107,30 +107,59 @@ function sections(b: Brief, forClient: boolean): Section[] {
   ];
 
   return all
-    .map((s) => ({ ...s, rows: s.rows.filter(([, v]) => v && v.trim()) }))
+    .map((s) => ({ ...s, rows: s.rows.filter(([, v]) => (Array.isArray(v) ? v.length : v && v.trim())) }))
     .filter((s) => s.rows.length);
 }
 
+const SANS = '-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';
+const asText = (v: string | string[]) => (Array.isArray(v) ? v.join(', ') : v);
+
+/** One card per section; each question sits above its answer, so it reads
+    cleanly on a phone. Lists (goals, extras) render as chips. */
 function sectionsHtml(list: Section[]): string {
+  const answer = (v: string | string[]) =>
+    Array.isArray(v)
+      ? v
+          .map(
+            (item) =>
+              `<span style="display:inline-block;margin:3px 6px 3px 0;padding:4px 10px;border-radius:999px;background:#effcf9;border:1px solid #b7ece2;font:500 13px/1.4 ${SANS};color:${INK}">${esc(item)}</span>`,
+          )
+          .join('')
+      : `<div style="font:600 15px/1.5 ${SANS};color:${INK};white-space:pre-wrap">${esc(v)}</div>`;
+
   return list
     .map(
       (s) => `
-      <tr><td style="padding:22px 0 6px;font:600 11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:${ACCENT}">${esc(s.title)}</td></tr>
-      <tr><td>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+      <tr><td style="padding-top:18px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border:1px solid ${LINE};border-radius:12px">
+          <tr><td style="padding:11px 16px;background:#f6f8fa;border-bottom:1px solid ${LINE};border-radius:12px 12px 0 0;font:700 11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:${ACCENT}">${esc(s.title)}</td></tr>
           ${s.rows
             .map(
-              ([k, v]) => `
-            <tr>
-              <td style="padding:7px 12px 7px 0;border-top:1px solid ${LINE};width:38%;vertical-align:top;font:13px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${FAINT}">${esc(k)}</td>
-              <td style="padding:7px 0;border-top:1px solid ${LINE};vertical-align:top;font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${INK};white-space:pre-wrap">${esc(v)}</td>
-            </tr>`,
+              ([k, v], i) => `
+          <tr><td style="padding:12px 16px;${i ? `border-top:1px solid #eef1f4;` : ''}">
+            <div style="margin-bottom:4px;font:12px/1.4 ${SANS};color:${FAINT}">${esc(k)}</div>
+            ${answer(v)}
+          </td></tr>`,
             )
             .join('')}
         </table>
       </td></tr>`,
     )
     .join('');
+}
+
+/** The brief as flat label/value pairs — the Web3Forms backup shows each one
+    as its own row, so questions and answers stay separated. */
+export function briefFields(b: Brief, siteUrl: string): [string, string][] {
+  const a = b.answers;
+  const rename: Record<string, string> = { Name: 'Client name', WhatsApp: 'Client WhatsApp', Email: 'Client email' };
+  const fields: [string, string][] = [['Chat on WhatsApp', `https://wa.me/${waDigits(a.whatsapp)}`]];
+  if (!a.email) fields.push(['Send their copy on WhatsApp', `https://wa.me/${waDigits(a.whatsapp)}?text=${encodeURIComponent(whatsappText(b))}`]);
+  if (b.uploads.length) fields.push(['Uploaded files', `${siteUrl}/files/${b.id}`]);
+  for (const s of sections(b, false)) {
+    for (const [k, v] of s.rows) fields.push([rename[k] ?? k, asText(v)]);
+  }
+  return fields;
 }
 
 function button(href: string, label: string, solid = true): string {
@@ -193,7 +222,7 @@ export function whatsappText(b: Brief): string {
   for (const s of sections(b, true)) {
     if (s.title === 'Contact') continue;
     lines.push(`*${s.title}*`);
-    for (const [k, v] of s.rows) lines.push(`${k}: ${v}`);
+    for (const [k, v] of s.rows) lines.push(`${k}: ${asText(v)}`);
     lines.push('');
   }
   lines.push('The estimate is a guide — we’ll confirm the final quote on a short call.');
@@ -234,6 +263,8 @@ export function danielEmail(b: Brief, siteUrl: string): { subject: string; html:
     a.email ? `Email: ${a.email}` : 'No email — send their copy on WhatsApp:',
     a.email ? '' : forward,
     b.uploads.length ? `Files: ${files}` : '',
+    '',
+    '──────── Copy for the client (ready to forward on WhatsApp) ────────',
     '',
     whatsappText(b),
   ]
