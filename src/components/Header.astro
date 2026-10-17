@@ -1,13 +1,22 @@
 ---
-import { SITE, NAV } from '../consts';
+import { SITE, NAV, STATUS } from '../consts';
 import ThemeToggle from './ThemeToggle.astro';
 
 const path = Astro.url.pathname;
 const isActive = (href: string) => path === href || path.startsWith(href + '/');
+
+// The client-track call to action. It sits in the bar at every width — it is
+// the one thing a business owner landing on a phone needs to see — while the
+// recruiter links fold into the menu below md.
+const PROJECT_HREF = '/start-a-project';
+const onProject = isActive(PROJECT_HREF);
 ---
 
 <header class="sticky top-0 z-40 border-b border-app bg-app/80 backdrop-blur">
-  <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-5">
+  <nav
+    aria-label="Main"
+    class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-5"
+  >
     <a
       href="/"
       class="shrink-0 font-mono text-[13px] font-semibold tracking-tight text-main sm:text-sm"
@@ -15,49 +24,470 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
       daniel<span class="text-accent">.</span>odiachi
     </a>
 
-    <div class="flex items-center gap-0.5 sm:gap-2">
-      {
-        NAV.map((item) => (
-          <a
-            href={item.href}
-            class:list={[
-              'rounded-md px-1.5 py-1.5 text-[13px] transition hover:text-accent sm:px-3 sm:text-sm',
-              isActive(item.href) ? 'text-accent' : 'text-muted',
-            ]}
-          >
-            {item.label}
-          </a>
-        ))
-      }
+    <div class="flex min-w-0 items-center gap-2 md:gap-1">
+      <!-- Desktop links (md+). Below md they live in the menu panel. -->
+      <ul class="hidden items-center md:flex" role="list">
+        {
+          NAV.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                class:list={[
+                  'rounded-md px-2.5 py-1.5 text-sm transition hover:text-accent lg:px-3',
+                  isActive(item.href) ? 'text-accent' : 'text-muted',
+                ]}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <span class="mx-1.5 hidden h-5 w-px bg-[var(--border)] md:block" aria-hidden="true"></span>
+
       <a
         href={SITE.resumeUrl}
-        class="ml-1 hidden rounded-md border border-app px-3 py-1.5 text-sm text-main transition hover:border-accent hover:text-accent sm:inline-block"
+        class="hidden h-9 items-center rounded-full border border-app px-3.5 text-sm text-main transition hover:border-accent hover:text-accent md:inline-flex"
       >
         Résumé
       </a>
+
+      <!-- Primary client CTA — every width. -->
+      <a
+        href={PROJECT_HREF}
+        class="nav-cta md:ml-1"
+        aria-current={onProject ? 'page' : undefined}
+      >
+        <span class="nav-cta-dot status-dot" aria-hidden="true"></span>
+        <span>Start a project</span>
+        <svg class="nav-cta-arrow" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+          <path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
       <button
         type="button"
         data-cmdk-open
         aria-label="Open command palette (Command K)"
-        class="cmdk-trigger h-9 items-center gap-1.5 rounded-md border border-app px-2.5 font-mono text-xs text-faint transition hover:border-accent hover:text-accent"
+        class="cmdk-trigger h-9 items-center gap-1.5 rounded-md border border-app px-2.5 font-mono text-xs text-faint transition hover:border-accent hover:text-accent md:ml-1"
       >
         <span aria-hidden="true">⌘K</span>
       </button>
-      <ThemeToggle />
+      <ThemeToggle class="hidden md:grid" />
+
+      <!-- Mobile/tablet menu. A native <details> disclosure, so it opens and
+           closes with no JS at all; the script below only adds Escape,
+           click-outside and close-on-navigate. The panel is positioned against
+           the sticky header (its nearest positioned ancestor), so it spans the
+           full width under the bar without adding to the bar's height. -->
+      <details class="nav-menu md:hidden" data-nav-menu>
+        <!-- The box is an inner span: older Safari ignores display:grid on a
+             <summary> itself. -->
+        <summary class="block rounded-md">
+          <span class="nav-menu-btn grid h-9 w-9 place-items-center rounded-md border border-app text-muted">
+            <span class="sr-only">Menu</span>
+            <span class="burger" aria-hidden="true"><span></span><span></span></span>
+          </span>
+        </summary>
+
+        <div class="nav-menu-scrim" data-nav-scrim aria-hidden="true"></div>
+        <div class="nav-menu-panel border-b border-app">
+          <div class="mx-auto max-w-5xl px-4 pb-5 pt-2 sm:px-5">
+            <ul role="list">
+              {
+                NAV.map((item, i) => (
+                  <li class="menu-row" style={`--i:${i}`}>
+                    <a
+                      href={item.href}
+                      aria-current={isActive(item.href) ? 'page' : undefined}
+                      class="menu-link flex items-center gap-4 border-b border-app py-3.5"
+                    >
+                      <span class="w-6 font-mono text-[11px] text-faint" aria-hidden="true">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span class="flex-1 text-lg font-semibold tracking-tight">{item.label}</span>
+                      <svg class="menu-arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+                        <path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                      </svg>
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+
+            <div class="menu-row mt-4 flex items-center gap-2" style={`--i:${NAV.length}`}>
+              <a
+                href={SITE.resumeUrl}
+                class="flex h-9 flex-1 items-center justify-center gap-2 rounded-md border border-app text-sm font-medium text-main transition hover:border-accent hover:text-accent"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">
+                  <path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v1A2 2 0 0 0 6.5 20.5h11a2 2 0 0 0 2-2v-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                Download résumé
+              </a>
+              <ThemeToggle />
+            </div>
+
+            {
+              STATUS.available && (
+                <p class="menu-row mt-4 flex items-center gap-2 font-mono text-xs text-muted" style={`--i:${NAV.length + 1}`}>
+                  <span class="status-dot" aria-hidden="true" />
+                  {STATUS.label}
+                </p>
+              )
+            }
+          </div>
+        </div>
+      </details>
     </div>
   </nav>
 </header>
 
 <style>
   /* The palette is JS-only, so the trigger stays hidden until its script has
-     registered the handler. Also reserved for wider screens — the nav is tight
-     on mobile and the shortcut isn't reachable there anyway. */
+     registered the handler. Desktop bar only — below md the bar holds just the
+     logo, the project CTA and the menu, and the shortcut isn't reachable on a
+     phone anyway. */
   .cmdk-trigger {
     display: none;
   }
-  @media (min-width: 640px) {
+  @media (min-width: 768px) {
     :global(html[data-cmdk-ready]) .cmdk-trigger {
       display: inline-flex;
     }
   }
+
+  /* ---- Start a project pill --------------------------------------------
+     Distinct from the plain links and the outlined Résumé: an accent-tinted
+     pill with a live dot ("taking projects") and a slow sheen that passes
+     every few seconds. Filled solid when you're on the page itself. */
+  .nav-cta {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.25rem;
+    padding: 0 0.8rem 0 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--accent) 22%, transparent),
+        color-mix(in srgb, var(--accent) 8%, transparent)
+      ),
+      var(--bg-card);
+    color: var(--accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.07),
+      0 6px 22px -10px color-mix(in srgb, var(--accent) 75%, transparent);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+  @media (min-width: 768px) {
+    .nav-cta {
+      font-size: 14px;
+    }
+  }
+  /* Sheen: a soft diagonal highlight that crosses the pill, then rests. */
+  .nav-cta::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    background: linear-gradient(
+      105deg,
+      transparent 30%,
+      rgb(255 255 255 / 0.2) 48%,
+      rgb(255 255 255 / 0.05) 56%,
+      transparent 70%
+    );
+    transform: translateX(-130%);
+    animation: nav-cta-sheen 7s cubic-bezier(0.4, 0, 0.2, 1) 1.5s infinite;
+    pointer-events: none;
+  }
+  @keyframes nav-cta-sheen {
+    0% {
+      transform: translateX(-130%);
+    }
+    20%,
+    100% {
+      transform: translateX(130%);
+    }
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.09),
+      0 10px 28px -10px color-mix(in srgb, var(--accent) 90%, transparent);
+  }
+  .nav-cta:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 9999px;
+  }
+  .nav-cta-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    flex-shrink: 0;
+  }
+  .nav-cta-arrow {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .nav-cta:hover .nav-cta-arrow,
+  .nav-cta:focus-visible .nav-cta-arrow {
+    transform: translateX(2px);
+  }
+  /* Narrowest phones: the arrow is the first thing to go. */
+  @media (max-width: 379px) {
+    .nav-cta {
+      padding: 0 0.85rem;
+    }
+    .nav-cta-arrow {
+      display: none;
+    }
+  }
+
+  :global(html.light) .nav-cta {
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 16%, #fff),
+      color-mix(in srgb, var(--accent) 6%, #fff)
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.8),
+      0 6px 18px -10px color-mix(in srgb, var(--accent) 85%, transparent);
+  }
+  :global(html.light) .nav-cta::after {
+    background: linear-gradient(
+      105deg,
+      transparent 30%,
+      rgb(255 255 255 / 0.85) 48%,
+      rgb(255 255 255 / 0.2) 56%,
+      transparent 70%
+    );
+  }
+
+  /* Active: you're on /start-a-project. Solid accent, dot at rest. */
+  .nav-cta[aria-current='page'],
+  :global(html.light) .nav-cta[aria-current='page'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #06140f;
+  }
+  .nav-cta[aria-current='page']::after {
+    animation: none;
+    opacity: 0;
+  }
+  .nav-cta[aria-current='page'] .nav-cta-dot {
+    background: #06140f;
+  }
+  .nav-cta[aria-current='page'] .nav-cta-dot::after {
+    content: none;
+  }
+
+  /* ---- Mobile menu ------------------------------------------------------ */
+  .nav-menu > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  .nav-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+  .nav-menu-btn {
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+  .nav-menu > summary:hover .nav-menu-btn,
+  .nav-menu[open] .nav-menu-btn {
+    color: var(--text);
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  }
+  .nav-menu > summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Two bars that fold into an X. */
+  .burger {
+    position: relative;
+    display: block;
+    width: 16px;
+    height: 10px;
+  }
+  .burger > span {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1.6px;
+    border-radius: 2px;
+    background: currentColor;
+    transition:
+      transform 0.25s cubic-bezier(0.3, 1.3, 0.5, 1),
+      top 0.2s ease;
+  }
+  .burger > span:first-child {
+    top: 1px;
+  }
+  .burger > span:last-child {
+    top: 7.4px;
+  }
+  .nav-menu[open] .burger > span:first-child {
+    top: 4.2px;
+    transform: rotate(45deg);
+  }
+  .nav-menu[open] .burger > span:last-child {
+    top: 4.2px;
+    transform: rotate(-45deg);
+  }
+
+  .nav-menu-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    /* Solid: a nested backdrop-filter can't see through the header's own. */
+    background: var(--bg);
+    box-shadow: 0 24px 40px -24px rgb(0 0 0 / 0.55);
+  }
+  :global(html.light) .nav-menu-panel {
+    box-shadow: 0 24px 40px -24px rgb(15 23 42 / 0.25);
+  }
+  /* Dims the page under the open menu. A real element (not a shadow) so a
+     tap on it closes the menu instead of hitting a link underneath. */
+  .nav-menu-scrim {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    height: 100dvh;
+    background: rgb(0 0 0 / 0.5);
+    animation: scrim-in 0.2s ease-out both;
+  }
+  :global(html.light) .nav-menu-scrim {
+    background: rgb(15 23 42 / 0.28);
+  }
+  @keyframes scrim-in {
+    from {
+      opacity: 0;
+    }
+  }
+  .nav-menu[open] .nav-menu-panel {
+    animation: menu-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .nav-menu[open] .menu-row {
+    animation: menu-row-in 0.3s ease-out both;
+    animation-delay: calc(40ms + var(--i) * 30ms);
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes menu-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .menu-link {
+    color: var(--text);
+    transition: color 0.15s ease;
+  }
+  .menu-link:hover,
+  .menu-link[aria-current='page'] {
+    color: var(--accent-ink);
+  }
+  .menu-arrow {
+    color: var(--text-faint);
+    transition:
+      transform 0.15s ease,
+      color 0.15s ease;
+  }
+  .menu-link:hover .menu-arrow {
+    color: var(--accent);
+    transform: translateX(3px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-cta,
+    .nav-cta-arrow,
+    .burger > span,
+    .menu-arrow {
+      transition: none;
+    }
+    .nav-cta:hover,
+    .nav-cta:hover .nav-cta-arrow,
+    .menu-link:hover .menu-arrow {
+      transform: none;
+    }
+    .nav-cta::after {
+      animation: none;
+      opacity: 0;
+    }
+    .nav-menu[open] .nav-menu-panel,
+    .nav-menu[open] .menu-row,
+    .nav-menu-scrim {
+      animation: none;
+    }
+  }
 </style>
+
+<script is:inline>
+  // Enhancements for the mobile menu. Without JS it is still a working
+  // <details> disclosure; this adds the behaviour people expect from a menu.
+  (() => {
+    const menu = document.querySelector('[data-nav-menu]');
+    if (!menu) return;
+    const summary = menu.querySelector('summary');
+
+    // Escape closes and returns focus to the button. Only acts while open, so
+    // it never swallows Escape meant for the palette or the contact dock.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !menu.open) return;
+      menu.open = false;
+      summary.focus();
+    });
+    // Tap/click anywhere outside closes.
+    document.addEventListener('pointerdown', (e) => {
+      if (menu.open && !menu.contains(e.target)) menu.open = false;
+    });
+    // Following a link, or tapping the dimmed page, closes it.
+    menu.addEventListener('click', (e) => {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.closest('a, [data-nav-scrim]')) menu.open = false;
+    });
+    // Rotating to a wide layout hides the button — don't leave it open.
+    const wide = window.matchMedia('(min-width: 768px)');
+    wide.addEventListener('change', (e) => {
+      if (e.matches) menu.open = false;
+    });
+  })();
+</script>

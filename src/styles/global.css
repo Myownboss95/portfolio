@@ -25,6 +25,10 @@
   --text-muted: #9aa7b4;
   --text-faint: #6b7785;
   --accent: var(--color-accent);
+  /* Accent for small text on light/tinted surfaces. In dark it is the accent
+     itself; in light the bright teal is too pale for text (~2.5:1 on white),
+     so it deepens to teal-700 (~5:1) and stays AA. */
+  --accent-ink: var(--color-accent);
 }
 
 html.light {
@@ -36,6 +40,7 @@ html.light {
   --text-muted: #4a5763;
   --text-faint: #7a8693;
   --accent: var(--color-accent-strong);
+  --accent-ink: #0f766e;
 }
 
 html {
@@ -75,6 +80,7 @@ body {
   .text-muted { color: var(--text-muted); }
   .text-faint { color: var(--text-faint); }
   .text-accent { color: var(--accent); }
+  .text-accent-ink { color: var(--accent-ink); }
   .border-app { border-color: var(--border); }
 }
 
@@ -114,6 +120,11 @@ body {
   border-radius: 9999px;
   background: var(--accent);
   animation: status-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+/* Same dot without the ping — for secondary placements, so a page never has
+   more than one or two things pulsing at once. */
+.status-dot.is-still::after {
+  content: none;
 }
 @keyframes status-ping {
   75%,

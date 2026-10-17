@@ -1,39 +1,118 @@
 ---
-// "Start a project" call-to-action for website clients, in three sizes:
-//   banner — full-width section (home, work)
-//   card   — compact box (contact, about, blog)
-//   link   — one line of text (hero, footer)
+// "Start a project" call-to-action for website clients, in four sizes:
+//   banner — full-width section with a live "your site" illustration (home)
+//   card   — offer card with a short pitch (work, contact, about, blog)
+//   hero   — slimmer offer strip under the hero buttons
+//   link   — one line of text (footer)
 // All of them point at /start-a-project (src/pages/start-a-project.astro).
+// The header has its own pill (Header.astro) and the ⌘K palette / contact dock
+// link here too.
+//
+// Tone: this is the second track. It should be easy to find and pleasant to
+// click, but never louder than the recruiter path — so the hero keeps
+// "Download résumé" as its one solid button and the offer sits beside it as a
+// tinted card.
+import { PRICES } from '../data/brief';
+
 interface Props {
-  variant?: 'banner' | 'card' | 'link';
+  variant?: 'banner' | 'card' | 'hero' | 'link';
   class?: string;
 }
 
 const { variant = 'card', class: className } = Astro.props;
 const href = '/start-a-project';
-const kinds = ['Company', 'E-commerce', 'Church', 'NGO'];
+
+// The lowest estimate the brief can produce: the base build plus the security
+// setup every build includes. Read from brief.ts so it can't drift from the
+// estimate the client will actually see.
+const fromNGN = PRICES.base.NGN[0] + PRICES.security.NGN[0];
+const fromLabel = `₦${Math.round(fromNGN / 1000)}k`;
+
+const POINTS = ['Instant estimate', 'Hosting included', 'About 3 minutes'];
+
+const FEATURES = [
+  { icon: 'bolt', title: 'Instant estimate', text: 'See your price before you send anything.' },
+  { icon: 'server', title: 'Hosting included', text: 'I host every site I build.' },
+  { icon: 'phone', title: 'Made for phones', text: 'Looks right on phones, tablets and laptops.' },
+  { icon: 'chat', title: 'WhatsApp built in', text: 'Customers reach you in one tap.' },
+] as const;
+
+// The banner illustration cycles through these — "this could be yours".
+// Each gets its own brand colour so the mock reads as *their* site, not mine.
+const SITES = [
+  { type: 'Company', domain: 'yourbusiness.com', color: '#2dd4bf' },
+  { type: 'Store', domain: 'yourstore.ng', color: '#f59e0b' },
+  { type: 'Church', domain: 'yourchurch.org', color: '#818cf8' },
+  { type: 'NGO', domain: 'yourcause.org', color: '#fb7185' },
+];
 ---
 
 {
   variant === 'link' && (
-    <a href={href} class:list={['cta-link group inline-flex items-center gap-1.5 text-sm text-muted', className]}>
-      <span class="status-dot" aria-hidden="true" />
-      Need a website for your business, church or NGO?
-      <span class="font-medium text-accent">
-        Start a project <span class="cta-arrow inline-block" aria-hidden="true">→</span>
+    <a href={href} class:list={['cta-link group inline-flex items-center gap-2 text-sm', className]}>
+      <span class="status-dot is-still" aria-hidden="true" />
+      <span class="cta-link-lead text-muted">Need a website?</span>
+      <span class="inline-flex items-center gap-1 font-medium text-accent-ink">
+        Start a project
+        <svg class="cta-arrow" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false">
+          <path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </span>
     </a>
   )
 }
 
 {
-  variant === 'card' && (
-    <a href={href} class:list={['cta-card group block rounded-xl border p-5', className]}>
-      <p class="font-mono text-xs uppercase tracking-wider text-accent">Websites</p>
-      <p class="mt-1.5 text-lg font-semibold text-main">Need a website for your business, church or NGO?</p>
-      <p class="mt-1 text-sm text-muted">Answer a few quick questions and see an estimated price in about 3 minutes.</p>
-      <span class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
-        Start a project <span class="cta-arrow inline-block" aria-hidden="true">→</span>
+  (variant === 'hero' || variant === 'card') && (
+    <a href={href} class:list={['offer group', `offer--${variant}`, className]}>
+      <span class="offer-art" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="34" height="34" fill="none" focusable="false">
+          <rect x="4.5" y="9.5" width="37" height="30" rx="4.5" stroke="currentColor" stroke-width="1.6" />
+          <path d="M4.5 16.5h37" stroke="currentColor" stroke-width="1.6" />
+          <circle cx="9" cy="13" r="1.15" fill="currentColor" />
+          <circle cx="12.6" cy="13" r="1.15" fill="currentColor" opacity=".6" />
+          <circle cx="16.2" cy="13" r="1.15" fill="currentColor" opacity=".35" />
+          <rect class="art-h" x="10" y="21.5" width="16" height="3" rx="1.5" fill="currentColor" />
+          <rect x="10" y="27" width="12" height="2" rx="1" fill="currentColor" opacity=".45" />
+          <rect class="art-btn" x="10" y="31.5" width="9" height="4" rx="2" fill="currentColor" />
+          <rect x="29" y="21.5" width="8" height="14" rx="1.5" fill="currentColor" opacity=".22" />
+          <path
+            class="art-spark"
+            d="M41 1.5l1.25 3.25L45.5 6l-3.25 1.25L41 10.5l-1.25-3.25L36.5 6l3.25-1.25z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+
+      <span class="offer-body">
+        <span class="offer-eyebrow">
+          <span class="status-dot is-still" aria-hidden="true" />
+          Taking on new website projects
+        </span>
+        <span class="offer-title">Need a website for your business, church or NGO?</span>
+        {variant === 'card' && (
+          <span class="offer-text">
+            Company sites, online stores, church and NGO websites — designed, built and hosted for
+            you.
+          </span>
+        )}
+        <span class="offer-points">
+          {POINTS.map((p) => (
+            <span class="offer-point">
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                <path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              {p}
+            </span>
+          ))}
+        </span>
+      </span>
+
+      <span class="offer-go">
+        Start a project
+        <svg class="cta-arrow" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+          <path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </span>
     </a>
   )
@@ -41,29 +120,160 @@ const kinds = ['Company', 'E-commerce', 'Church', 'NGO'];
 
 {
   variant === 'banner' && (
-    <section class:list={['border-t border-app', className]}>
+    <section class:list={['border-t border-app', className]} aria-labelledby="cta-banner-title">
       <div class="mx-auto max-w-5xl px-5 py-16">
-        <div class="cta-banner reveal relative overflow-hidden rounded-2xl border p-7 sm:p-10">
-          <div class="cta-glow" aria-hidden="true" />
-          <p class="relative font-mono text-xs uppercase tracking-wider text-accent">Websites</p>
-          <h2 class="relative mt-2 max-w-2xl text-2xl font-bold tracking-tight text-main sm:text-3xl">
-            Need a website that brings in customers, members or donors?
-          </h2>
-          <p class="relative mt-3 max-w-xl text-muted">
-            I design and build websites for companies, online stores, churches and NGOs — hosting
-            included. Tell me what you need and see an estimated price in about 3 minutes.
-          </p>
-          <ul class="relative mt-5 flex flex-wrap gap-2" role="list">
-            {kinds.map((k) => (
-              <li class="rounded-full border border-app bg-soft px-3 py-1 text-xs text-muted">{k}</li>
-            ))}
-          </ul>
-          <a
-            href={href}
-            class="cta-button group relative mt-7 inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-[#06140f]"
-          >
-            Start a project <span class="cta-arrow inline-block" aria-hidden="true">→</span>
-          </a>
+        <div class="cta-banner reveal relative overflow-hidden rounded-2xl border">
+          <div class="banner-dots" aria-hidden="true" />
+
+          <!-- Phones: copy → features → button. md+: copy and button on the
+               left, the illustration on the right, features as a row below. -->
+          <div class="banner-layout relative p-6 sm:p-10">
+            <div class="banner-copy">
+              <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-accent-ink">
+                <span class="status-dot is-still" aria-hidden="true" />
+                Websites · taking new projects
+              </p>
+              <h2
+                id="cta-banner-title"
+                class="mt-3 max-w-xl text-balance text-2xl font-bold tracking-tight text-main sm:text-3xl lg:text-[2.125rem] lg:leading-[1.15]"
+              >
+                Websites that bring in <span class="banner-em">customers, members and donors.</span>
+              </h2>
+              <p class="mt-3 max-w-xl text-muted">
+                I design, build and host websites for companies, online stores, churches and NGOs.
+                Answer a few quick questions and see your estimated price straight away.
+              </p>
+            </div>
+
+            <ul class="banner-features grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4" role="list">
+              {FEATURES.map((f) => (
+                <li class="flex gap-3">
+                  <span class="feature-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                      {f.icon === 'bolt' && <path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12l1-8Z" />}
+                      {f.icon === 'server' && (
+                        <>
+                          <rect x="3.5" y="4" width="17" height="7" rx="2" />
+                          <rect x="3.5" y="13" width="17" height="7" rx="2" />
+                          <path d="M7.5 7.5h.01M7.5 16.5h.01" />
+                        </>
+                      )}
+                      {f.icon === 'phone' && (
+                        <>
+                          <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+                          <path d="M11 18.5h2" />
+                        </>
+                      )}
+                      {f.icon === 'chat' && (
+                        <path d="M20 11.5a8 8 0 0 1-11.6 7.15L4 20l1.35-4.2A8 8 0 1 1 20 11.5Z" />
+                      )}
+                    </svg>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-main">{f.title}</span>
+                    <span class="block text-sm text-muted">{f.text}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div class="banner-cta flex flex-wrap items-center gap-x-5 gap-y-3">
+              <a
+                href={href}
+                class="cta-button group relative inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-[#06140f]"
+              >
+                Start a project
+                <svg class="cta-arrow" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+                  <path d="M3 8h9.5M8.5 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </a>
+              <p class="font-mono text-xs text-muted">
+                About 3 min · No sign-up · From {fromLabel}
+              </p>
+            </div>
+
+            <!-- Illustration: a site that keeps becoming someone else's. Pure
+                 CSS; decorative, so hidden from assistive tech. -->
+            <div class="mock-stage hidden md:block" aria-hidden="true">
+              <div class="mock">
+                <div class="mock-bar">
+                  <span class="mock-lights"><i /><i /><i /></span>
+                  <span class="mock-url">
+                    <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                      <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" />
+                      <path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" />
+                    </svg>
+                    <span class="mock-url-window">
+                      <span class="mock-url-track">
+                        {[...SITES, SITES[0]].map((s) => (
+                          <span>{s.domain}</span>
+                        ))}
+                      </span>
+                    </span>
+                  </span>
+                </div>
+                <div class="mock-page">
+                  <div class="mock-nav">
+                    <span class="flex items-center gap-1.5">
+                      <i class="mock-logo mock-brand" />
+                      <i class="mock-bar-line" style="width:2.25rem" />
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <i class="mock-bar-line" />
+                      <i class="mock-bar-line" />
+                      <i class="mock-bar-line" />
+                    </span>
+                  </div>
+                  <div class="mock-hero">
+                    <span class="block">
+                      <i class="mock-h1" style="width:94%" />
+                      <i class="mock-h1" style="width:66%" />
+                      <i class="mock-p" style="width:100%" />
+                      <i class="mock-p" style="width:80%" />
+                      <i class="mock-btn mock-brand" />
+                    </span>
+                    <i class="mock-photo mock-brand" />
+                  </div>
+                  <div class="mock-cards">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                </div>
+                <span class="mock-wa">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">
+                    <path d="M20 11.5a8 8 0 0 1-11.6 7.15L4 20l1.35-4.2A8 8 0 1 1 20 11.5Z" />
+                  </svg>
+                </span>
+              </div>
+
+              <div class="mock-toast mock-toast--estimate">
+                <span class="mock-check">
+                  <svg viewBox="0 0 16 16" width="12" height="12">
+                    <path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="leading-tight">
+                  <span class="block text-xs font-semibold text-main">Estimate ready</span>
+                  <span class="block font-mono text-[10.5px] text-faint">in about 3 minutes</span>
+                </span>
+              </div>
+              <div class="mock-toast mock-toast--host">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <rect x="3.5" y="4" width="17" height="7" rx="2" />
+                  <rect x="3.5" y="13" width="17" height="7" rx="2" />
+                  <path d="M7.5 7.5h.01M7.5 16.5h.01" />
+                </svg>
+                Hosting included
+              </div>
+
+              <ul class="mock-types" role="list">
+                {SITES.map((s, i) => (
+                  <li style={`--i:${i};--c:${s.color}`}>{s.type}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -71,55 +281,696 @@ const kinds = ['Company', 'E-commerce', 'Church', 'NGO'];
 }
 
 <style>
+  /* ---- Shared ------------------------------------------------------------ */
   .cta-arrow {
+    flex-shrink: 0;
     transition: transform 0.2s ease;
   }
   .group:hover .cta-arrow,
   .group:focus-visible .cta-arrow {
     transform: translateX(3px);
   }
-  .cta-link:hover {
+
+  /* ---- link ------------------------------------------------------------- */
+  .cta-link {
+    text-underline-offset: 3px;
+  }
+  .cta-link:hover .cta-link-lead {
     color: var(--text);
   }
-  .cta-card {
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-    background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+  .cta-link:hover .text-accent-ink {
+    text-decoration: underline;
+  }
+
+  /* ---- hero / card: the offer card -------------------------------------- */
+  .offer {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.25rem;
+    padding: 1rem 1.125rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    background:
+      radial-gradient(
+        120% 160% at 0% 0%,
+        color-mix(in srgb, var(--accent) 13%, transparent),
+        transparent 55%
+      ),
+      color-mix(in srgb, var(--accent) 3%, var(--bg-card));
     transition:
-      border-color 0.15s ease,
-      transform 0.15s ease;
+      border-color 0.2s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
-  .cta-card:hover {
-    border-color: var(--accent);
+  .offer:hover {
+    border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
     transform: translateY(-2px);
+    box-shadow: 0 20px 44px -26px color-mix(in srgb, var(--accent) 70%, transparent);
   }
-  .cta-banner {
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-    background: color-mix(in srgb, var(--accent) 5%, var(--bg-card));
+  .offer:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 1rem;
   }
-  .cta-glow {
-    position: absolute;
-    right: -8rem;
-    top: -10rem;
-    height: 22rem;
-    width: 22rem;
+
+  .offer-art {
+    position: relative;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.875rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-soft));
+    color: var(--accent-ink);
+  }
+  .offer-art svg {
+    overflow: visible;
+  }
+  .art-h,
+  .art-btn {
+    transform-box: fill-box;
+    transform-origin: left center;
+    transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  .offer:hover .art-h {
+    transform: scaleX(1.18);
+  }
+  .offer:hover .art-btn {
+    transform: scaleX(1.25);
+  }
+  .art-spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-twinkle 5s ease-in-out infinite;
+  }
+  @keyframes art-twinkle {
+    0%,
+    70%,
+    100% {
+      opacity: 0.35;
+      transform: scale(0.7) rotate(0deg);
+    }
+    80% {
+      opacity: 1;
+      transform: scale(1.1) rotate(45deg);
+    }
+  }
+
+  .offer-body {
+    display: flex;
+    flex: 1 1 15rem;
+    min-width: 0;
+    flex-direction: column;
+  }
+  .offer-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .offer-eyebrow .status-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+  }
+  .offer-title {
+    margin-top: 0.3rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .offer--card .offer-title {
+    font-size: 1.125rem;
+  }
+  .offer-text {
+    margin-top: 0.3rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+  .offer-points {
+    margin-top: 0.55rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.9rem;
+  }
+  .offer-point {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .offer-point svg {
+    color: var(--accent);
+  }
+
+  .offer-go {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding: 0 1.1rem;
     border-radius: 9999px;
-    background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
-    pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease;
   }
+  .offer:hover .offer-go,
+  .offer:focus-visible .offer-go {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #06140f;
+  }
+  /* Phones: smaller art beside the text, button on its own full-width row. */
+  @media (max-width: 639px) {
+    .offer {
+      align-items: flex-start;
+      gap: 1rem 0.875rem;
+    }
+    .offer-art {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 0.75rem;
+    }
+    .offer-art svg {
+      width: 28px;
+      height: 28px;
+    }
+    .offer-body {
+      flex-basis: 0;
+    }
+    .offer-go {
+      width: 100%;
+    }
+  }
+
+  /* ---- banner ----------------------------------------------------------- */
+  .cta-banner {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    background:
+      radial-gradient(
+        80% 110% at 100% 0%,
+        color-mix(in srgb, var(--accent) 14%, transparent),
+        transparent 60%
+      ),
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 5%, var(--bg-card)), var(--bg-card));
+  }
+  .banner-layout {
+    display: grid;
+    grid-template-areas: 'copy' 'features' 'cta';
+    gap: 1.75rem;
+  }
+  .banner-copy {
+    grid-area: copy;
+  }
+  .banner-features {
+    grid-area: features;
+  }
+  .banner-cta {
+    grid-area: cta;
+  }
+  .mock-stage {
+    grid-area: mock;
+  }
+  @media (min-width: 768px) {
+    .banner-layout {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      grid-template-areas:
+        'copy mock'
+        'cta mock'
+        'features features';
+      column-gap: 2.5rem;
+      row-gap: 2rem;
+    }
+    .banner-copy {
+      align-self: end;
+    }
+    .banner-cta {
+      align-self: start;
+    }
+    .banner-features {
+      margin-top: 0.25rem;
+      padding-top: 2rem;
+      border-top: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+    }
+  }
+  @media (min-width: 1024px) {
+    .banner-layout {
+      column-gap: 3rem;
+    }
+  }
+
+  .banner-em {
+    background: linear-gradient(
+      100deg,
+      var(--accent-ink) 0%,
+      color-mix(in srgb, var(--accent-ink) 55%, var(--text)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Engineer's graph paper, fading out from behind the illustration. */
+  .banner-dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--text) 16%, transparent) 1px,
+      transparent 1.3px
+    );
+    background-size: 20px 20px;
+    -webkit-mask-image: radial-gradient(65% 85% at 82% 45%, #000, transparent 75%);
+    mask-image: radial-gradient(65% 85% at 82% 45%, #000, transparent 75%);
+    opacity: 0.6;
+  }
+
+  .feature-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+    background: color-mix(in srgb, var(--accent) 9%, var(--bg-soft));
+    color: var(--accent-ink);
+  }
+
   .cta-button {
     transition:
-      opacity 0.15s ease,
       transform 0.15s ease,
-      box-shadow 0.15s ease;
+      box-shadow 0.15s ease,
+      filter 0.15s ease;
+    box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--accent) 80%, transparent);
   }
   .cta-button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--accent) 60%, transparent);
+    filter: brightness(1.05);
+    box-shadow: 0 14px 32px -12px color-mix(in srgb, var(--accent) 90%, transparent);
   }
+
+  /* ---- banner illustration --------------------------------------------- */
+  .mock-stage {
+    position: relative;
+    padding: 1.75rem 0.75rem 0 1.5rem;
+  }
+  .mock {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.875rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow:
+      0 40px 70px -40px rgb(0 0 0 / 0.75),
+      0 0 0 1px rgb(255 255 255 / 0.02);
+    transform: perspective(1400px) rotateY(-7deg) rotateX(3deg);
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .cta-banner:hover .mock {
+    transform: perspective(1400px) rotateY(-2deg) rotateX(1deg);
+  }
+  :global(html.light) .mock {
+    box-shadow:
+      0 40px 70px -40px rgb(15 23 42 / 0.35),
+      0 0 0 1px rgb(15 23 42 / 0.02);
+  }
+
+  .mock-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-soft);
+  }
+  .mock-lights {
+    display: flex;
+    gap: 0.3rem;
+  }
+  .mock-lights i {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--text-faint) 55%, transparent);
+  }
+  .mock-url {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    height: 1.25rem;
+    margin-right: 1.6rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+  }
+  .mock-url-window {
+    display: block;
+    height: 1.4em;
+    line-height: 1.4em;
+    overflow: hidden;
+  }
+  .mock-url-track {
+    display: block;
+    animation: mock-url 12s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+  }
+  .mock-url-track > span {
+    display: block;
+    color: var(--text-muted);
+  }
+
+  .mock-page {
+    padding: 0.9rem 1rem 1rem;
+  }
+  .mock-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mock-page i {
+    display: block;
+  }
+  .mock-logo {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 0.2rem;
+  }
+  .mock-bar-line {
+    width: 1rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--text) 16%, transparent);
+  }
+  .mock-hero {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    align-items: center;
+    gap: 0.9rem;
+    margin-top: 0.85rem;
+    padding: 1rem 0.95rem;
+    border-radius: 0.55rem;
+    animation: mock-tint 12s infinite;
+    background: rgb(45 212 191 / 0.1);
+  }
+  /* "Photo" placeholder: brand-tinted block with a sun and a hill. */
+  .mock-photo {
+    position: relative;
+    height: 5.25rem;
+    overflow: hidden;
+    border-radius: 0.45rem;
+    opacity: 0.55;
+  }
+  .mock-photo::before {
+    content: '';
+    position: absolute;
+    top: 0.6rem;
+    right: 0.7rem;
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.75);
+  }
+  .mock-photo::after {
+    content: '';
+    position: absolute;
+    inset: 40% -10% 0 -10%;
+    background: rgb(0 0 0 / 0.35);
+    clip-path: polygon(0 100%, 0 70%, 30% 15%, 55% 60%, 72% 35%, 100% 75%, 100% 100%);
+  }
+  .mock-wa {
+    position: absolute;
+    right: 0.7rem;
+    bottom: 0.7rem;
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border-radius: 9999px;
+    background: #25d366;
+    color: #fff;
+    box-shadow: 0 6px 14px -6px rgb(37 211 102 / 0.8);
+  }
+  .mock-h1 {
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--text) 60%, transparent);
+  }
+  .mock-h1 + .mock-h1 {
+    margin-top: 0.3rem;
+  }
+  .mock-p {
+    height: 0.25rem;
+    margin-top: 0.4rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--text) 18%, transparent);
+  }
+  .mock-h1 + .mock-p {
+    margin-top: 0.6rem;
+  }
+  .mock-btn {
+    width: 48%;
+    height: 0.75rem;
+    margin-top: 0.75rem;
+    border-radius: 9999px;
+  }
+  .mock-brand {
+    background: #2dd4bf;
+    animation: mock-brand 12s infinite;
+  }
+  .mock-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+  }
+  .mock-cards i {
+    height: 3.4rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--text) 7%, transparent) 0 55%,
+      transparent 55%
+    );
+  }
+
+  .mock-toast {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    border-radius: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: var(--bg-card);
+    box-shadow: 0 18px 36px -18px rgb(0 0 0 / 0.6);
+    animation: mock-float 6s ease-in-out infinite;
+  }
+  :global(html.light) .mock-toast {
+    box-shadow: 0 18px 36px -18px rgb(15 23 42 / 0.3);
+  }
+  .mock-toast--estimate {
+    left: 0;
+    bottom: 3.5rem;
+    padding: 0.55rem 0.8rem 0.55rem 0.6rem;
+  }
+  .mock-toast--host {
+    right: 0;
+    top: 0.5rem;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 9999px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-muted);
+    animation-delay: -3s;
+  }
+  .mock-toast--host svg {
+    color: var(--accent);
+  }
+  .mock-check {
+    display: grid;
+    width: 1.5rem;
+    height: 1.5rem;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--accent);
+    color: #06140f;
+  }
+
+  .mock-types {
+    display: flex;
+    justify-content: center;
+    gap: 0.375rem;
+    margin-top: 1.1rem;
+  }
+  .mock-types li {
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    /* Starts each chip half a beat early (0.48s = 4% of 12s) so it fades in
+       while the URL and colours are changing, not after they've landed. */
+    animation: mock-type 12s infinite;
+    animation-delay: calc(var(--i) * 3s - 0.48s);
+  }
+
+  /* Four 3s beats: hold ~2.5s, change over ~0.5s. The URL track has the first
+     domain repeated at the end, so the loop never visibly rewinds. */
+  @keyframes mock-url {
+    0%,
+    21% {
+      transform: translateY(0);
+    }
+    25%,
+    46% {
+      transform: translateY(-20%);
+    }
+    50%,
+    71% {
+      transform: translateY(-40%);
+    }
+    75%,
+    96% {
+      transform: translateY(-60%);
+    }
+    100% {
+      transform: translateY(-80%);
+    }
+  }
+  @keyframes mock-brand {
+    0%,
+    21% {
+      background-color: #2dd4bf;
+    }
+    25%,
+    46% {
+      background-color: #f59e0b;
+    }
+    50%,
+    71% {
+      background-color: #818cf8;
+    }
+    75%,
+    96% {
+      background-color: #fb7185;
+    }
+    100% {
+      background-color: #2dd4bf;
+    }
+  }
+  @keyframes mock-tint {
+    0%,
+    21% {
+      background-color: rgb(45 212 191 / 0.1);
+    }
+    25%,
+    46% {
+      background-color: rgb(245 158 11 / 0.1);
+    }
+    50%,
+    71% {
+      background-color: rgb(129 140 248 / 0.12);
+    }
+    75%,
+    96% {
+      background-color: rgb(251 113 133 / 0.1);
+    }
+    100% {
+      background-color: rgb(45 212 191 / 0.1);
+    }
+  }
+  @keyframes mock-type {
+    0%,
+    29%,
+    100% {
+      color: var(--text-faint);
+      border-color: var(--border);
+      background-color: transparent;
+    }
+    4%,
+    25% {
+      color: var(--text);
+      border-color: var(--c);
+      background-color: color-mix(in srgb, var(--c) 14%, transparent);
+    }
+  }
+  @keyframes mock-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  /* ---- Reduced motion: everything holds its first frame. ---------------- */
   @media (prefers-reduced-motion: reduce) {
-    .cta-card:hover,
-    .cta-button:hover {
+    .offer,
+    .cta-arrow,
+    .art-h,
+    .art-btn,
+    .offer-go,
+    .cta-button,
+    .mock {
+      transition: none;
+    }
+    .offer:hover,
+    .cta-button:hover,
+    .group:hover .cta-arrow,
+    .group:focus-visible .cta-arrow,
+    .offer:hover .art-h,
+    .offer:hover .art-btn {
       transform: none;
+    }
+    .cta-banner:hover .mock {
+      transform: perspective(1400px) rotateY(-7deg) rotateX(3deg);
+    }
+    .art-spark,
+    .mock-url-track,
+    .mock-hero,
+    .mock-brand,
+    .mock-toast,
+    .mock-types li {
+      animation: none;
+    }
+    .art-spark {
+      opacity: 0.6;
+    }
+    .mock-types li:first-child {
+      color: var(--text);
+      border-color: var(--c);
+      background-color: color-mix(in srgb, var(--c) 14%, transparent);
     }
   }
 </style>
