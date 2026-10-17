@@ -52,4 +52,15 @@ export const PRODUCTS: Product[] = [
       'Screenshot of the Glyde website homepage, the all-in-one payment platform Daniel engineered.',
     caseStudySlug: 'glyde-payment-infrastructure',
   },
+  {
+    name: 'Impact Works',
+    url: 'https://impactworks.space',
+    blurb:
+      'A storefront and WhatsApp commerce platform for the books and courses TDIC Foundation publishes, priced in naira and US dollars. I built it end to end — WhatsApp ordering with human handover, Paystack and Flutterwave payments, and purchases read in an encrypted in-browser reader or streamed from Cloudflare R2.',
+    role: 'Built end to end, scope to production · 2026',
+    stack: ['Laravel', 'PHP', 'Filament', 'Livewire', 'MySQL', 'Redis', 'Cloudflare R2'],
+    image: '/covers/impactworks.png',
+    imageAlt:
+      'Screenshot of the Impact Works storefront homepage: "Everything TDICF publishes", with naira and dollar pricing, an Order on WhatsApp button, and fanned course covers.',
+  },
 ];

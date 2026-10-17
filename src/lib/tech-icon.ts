@@ -20,6 +20,7 @@ const ICON_ALIASES: Record<string, string> = {
   'vue.js': 'Vue',
   claude: 'Anthropic Claude',
   tailwind: 'Tailwind CSS',
+  'cloudflare r2': 'Cloudflare',
 };
 
 // Index once by lowercased name rather than scanning the map per lookup.

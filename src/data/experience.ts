@@ -17,6 +17,19 @@ export interface Job {
 
 export const experience: Job[] = [
   {
+    role: 'Backend Developer',
+    company: 'SpacePointe — Point-of-Sale Platform',
+    period: 'Jun 2026 — Present',
+    location: 'Remote',
+    points: [
+      'Backend engineering for a multi-tenant point-of-sale platform for restaurants and retail stores: a Laravel 12 / PHP 8.4 API serving Android POS terminals and a web merchant dashboard, alongside legacy CodeIgniter and Node.js services.',
+      'Migrating legacy CodeIgniter endpoints into the Laravel API one at a time (strangler-fig): app configuration and global settings, token renewal and password flows, employee management, business customers, and bar and table tabs, each documented in OpenAPI and verified against staging before review.',
+      'Built and extended payment integrations: ValorPay for donations, recurring membership subscriptions, and card-present / card-not-present terminals, and the FreedomPay Hosted Payment Page for invoice payments, including the technical integration documentation submitted for FreedomPay certification.',
+      'Writing the Pest unit-test suite for the Laravel API in endpoint batches, with SQL-level tests that pin query behaviour without a database and record defects as current behaviour so each fix is a deliberate change.',
+      'Fixed order and reporting defects across the stack, from voided-item tab totals to the item-sales and end-of-day reports in the Node.js dashboard API.',
+    ],
+  },
+  {
     role: 'Technical Lead / CTO',
     company: 'Hizo Africa — Pan-African Neobank',
     period: 'Oct 2023 — Present',
