@@ -238,8 +238,12 @@ export function estimate(a: Partial<BriefAnswers>, currency: Currency): Estimate
   };
 }
 
+// Thousands separators by hand: the Workers runtime doesn't group digits for
+// every locale the way browsers do, which left emails showing ₦730000.
+const group = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
 export function formatMoney(n: number, currency: Currency): string {
-  return currency === 'NGN' ? `₦${n.toLocaleString('en-NG')}` : `$${n.toLocaleString('en-US')}`;
+  return currency === 'NGN' ? `₦${group(n)}` : `$${group(n)}`;
 }
 
 export const formatRange = (e: Estimate) =>
